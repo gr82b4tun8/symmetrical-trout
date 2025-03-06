@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target } from 'lucide-react';
+import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target, User } from 'lucide-react';
 import Head from 'next/head';
 import html2canvas from 'html2canvas';
 import Link from 'next/link';
