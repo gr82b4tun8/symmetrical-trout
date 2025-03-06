@@ -1,10 +1,10 @@
-// pages/index.js
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target } from 'lucide-react';
 import Head from 'next/head';
 import html2canvas from 'html2canvas';
 import Link from 'next/link';
+import { supabase } from '../lib/supabaseClient';
 
 // Dynamically import Chart component
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -31,11 +31,52 @@ export default function Home() {
   // Time filter state
   const [timeFilter, setTimeFilter] = useState('day');
   
-  // Goal state - set a default portfolio goal
-  const [portfolioGoal, setPortfolioGoal] = useState(1000);
+  // User's portfolio data from Supabase
+  const [tradingGoals, setTradingGoals] = useState(null);
+  const [portfolioGoal, setPortfolioGoal] = useState(0);
+  const [startingPortfolio, setStartingPortfolio] = useState(0);
+  const [loadingUserData, setLoadingUserData] = useState(true);
   
   // Ref for the chart container to capture screenshot
   const chartRef = useRef(null);
+
+  // Fetch user profile and trading goals data
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        setLoadingUserData(true);
+        
+        // Get authenticated user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        
+        // Fetch trading goals data
+        const { data: goalsData, error: goalsError } = await supabase
+          .from('trading_goals')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (goalsError && goalsError.code !== 'PGRST116') {
+          console.error('Error fetching goals:', goalsError);
+        }
+
+        if (goalsData) {
+          setTradingGoals(goalsData);
+          setPortfolioGoal(goalsData.portfolio_goal || 1000); // Fallback to 1000 if not set
+          setStartingPortfolio(goalsData.starting_portfolio_size || 0);
+        }
+        
+      } catch (err) {
+        console.error('Error loading user data:', err);
+      } finally {
+        setLoadingUserData(false);
+      }
+    }
+    
+    fetchUserData();
+  }, []);
 
   const isWithinTradingHours = (timestamp) => {
     const date = new Date(timestamp);
@@ -104,9 +145,30 @@ export default function Home() {
 
   // Function to calculate progress percentage based on current portfolio value
   const calculateProgress = () => {
-    if (!stats || !stats.currentPrice) return 0;
-    const progress = (parseFloat(stats.currentPrice) / portfolioGoal) * 100;
+    if (!stats || !stats.currentPrice || !portfolioGoal) return 0;
+    
+    // Calculate current portfolio value based on starting portfolio + current stock price
+    const currentPortfolioValue = startingPortfolio + parseFloat(stats.currentPrice);
+    
+    // Calculate progress towards goal
+    const progress = (currentPortfolioValue / portfolioGoal) * 100;
     return Math.min(progress, 100); // Cap at 100%
+  };
+
+  // Format currency
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return '$0.00';
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  // Function to calculate current portfolio value
+  const getCurrentPortfolioValue = () => {
+    if (!stats || !stats.currentPrice) return startingPortfolio;
+    return startingPortfolio + parseFloat(stats.currentPrice);
   };
 
   // Function to capture screenshot and send to ChatGPT
@@ -390,6 +452,21 @@ export default function Home() {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
           }
+          
+          .portfolio-bubble {
+            background: radial-gradient(circle at 70% 70%, rgba(51, 102, 255, 0.15), rgba(0, 200, 83, 0.15));
+            border-radius: 999px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+          
+          .portfolio-bubble:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+          }
         `}</style>
       </Head>
       
@@ -426,6 +503,13 @@ export default function Home() {
                   <span className="text-gray-400">Payouts</span>
                 </div>
               </Link>
+              
+              <Link href="/my-profile" className="block">
+                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
+                  <Target className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-400">Goals</span>
+                </div>
+              </Link>
             </div>
           </div>
           
@@ -449,17 +533,105 @@ export default function Home() {
             </div>
             
             <div className="flex items-center mt-4 sm:mt-0">
-              <div className="w-8 h-8 rounded-full bg-white p-1.5 flex items-center justify-center">
-                <Settings className="h-4 w-4 text-[#111111]" />
+              <Link href="/my-profile">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#3366FF] to-[#00C853] flex items-center justify-center cursor-pointer">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Portfolio Stats in Bubbles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="portfolio-bubble p-6 flex items-center">
+              <div className="rounded-full p-3 bg-[rgba(51,102,255,0.15)] mr-4">
+                <DollarSign className="h-6 w-6 text-[#3366FF]" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm text-gray-300 mb-1">Portfolio Worth</h3>
+                  {stats && (
+                    <span 
+                      className={`text-sm font-medium ${parseFloat(stats.changePct) >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}
+                    >
+                      {parseFloat(stats.changePct) >= 0 ? '+' : ''}{stats.changePct}%
+                    </span>
+                  )}
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {loadingUserData ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    formatCurrency(getCurrentPortfolioValue())
+                  )}
+                </p>
+              </div>
+            </div>
+            
+            <div className="portfolio-bubble p-6 flex items-center">
+              <div className="rounded-full p-3 bg-[rgba(0,200,83,0.15)] mr-4">
+                <Target className="h-6 w-6 text-[#00C853]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm text-gray-300 mb-1">Portfolio Goal</h3>
+                <div className="flex flex-col">
+                  <p className="text-2xl font-bold text-white">
+                    {loadingUserData ? (
+                      <span className="animate-pulse">Loading...</span>
+                    ) : (
+                      formatCurrency(portfolioGoal)
+                    )}
+                  </p>
+                  
+                  <div className="progress-track mt-2">
+                    <div 
+                      className="progress-bar" 
+                      style={{ width: `${calculateProgress()}%` }}
+                    ></div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-gray-400">Progress</p>
+                    <p className="text-xs text-white font-medium">{calculateProgress().toFixed(0)}%</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Portfolio Worth Card */}
+            {/* Portfolio Starting Value Card */}
             <div className="card p-6">
-              <p className="text-gray-400 text-sm mb-1">Portfolio Worth</p>
+              <p className="text-gray-400 text-sm mb-1">Starting Portfolio</p>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-bold text-white">
+                  {loadingUserData ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    formatCurrency(startingPortfolio)
+                  )}
+                </span>
+              </div>
+              
+              <div className="flex items-center mt-8">
+                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-[#3366FF]" />
+                </div>
+                <p className="text-xs text-gray-400 ml-2">
+                  Initial investment
+                </p>
+                <Link href="/my-profile" className="ml-auto">
+                  <button className="text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors">
+                    Edit
+                  </button>
+                </Link>
+              </div>
+            </div>
+            
+            {/* Current Stock Card */}
+            <div className="card p-6">
+              <p className="text-gray-400 text-sm mb-1">Current Stock</p>
               <div className="flex items-baseline">
                 <span className="text-3xl font-bold text-white">${stats ? stats.currentPrice : '0.00'}</span>
                 {stats && (
@@ -485,38 +657,6 @@ export default function Home() {
                 >
                   {loading ? 'Loading...' : 'Refresh'}
                 </button>
-              </div>
-            </div>
-            
-            {/* Goal Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-sm mb-1">Goal</p>
-              <div className="flex items-baseline mb-3">
-                <span className="text-3xl font-bold text-white">${portfolioGoal.toFixed(2)}</span>
-                <span className="ml-2 text-sm font-medium text-gray-400">
-                  Target
-                </span>
-              </div>
-              
-              <div className="progress-track">
-                <div 
-                  className="progress-bar" 
-                  style={{ width: `${calculateProgress()}%` }}
-                ></div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-gray-400">Progress</p>
-                <p className="text-xs text-white font-medium">{calculateProgress().toFixed(0)}%</p>
-              </div>
-              
-              <div className="flex items-center mt-4">
-                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
-                  <Target className="h-4 w-4 text-[#3366FF]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Portfolio goal tracker
-                </p>
               </div>
             </div>
             
