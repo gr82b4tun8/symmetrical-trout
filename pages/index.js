@@ -1,114 +1,331 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+// pages/index.js
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import { BarChart2, TrendingUp, User, ChevronRight, LogIn } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import GradientBackground from '../components/GradientBackground';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// Animate stock chart on homepage
+const AnimatedStockChart = () => {
+  const [chartData, setChartData] = useState([]);
+  
+  useEffect(() => {
+    // Generate random increasing trend data for animation
+    const generateData = () => {
+      const volatility = 5;
+      const dataPoints = 20;
+      const result = [];
+      let lastValue = 100;
+      
+      for (let i = 0; i < dataPoints; i++) {
+        // Ensure overall upward trend with some volatility
+        const change = (Math.random() * volatility) - (volatility / 3);
+        lastValue = lastValue + change;
+        result.push({ x: i, y: lastValue });
+      }
+      
+      return result;
+    };
+    
+    setChartData(generateData());
+    
+    // Animate chart by updating data periodically
+    const interval = setInterval(() => {
+      const newData = [...chartData];
+      
+      if (newData.length > 0) {
+        // Shift all values left
+        for (let i = 0; i < newData.length - 1; i++) {
+          newData[i].y = newData[i + 1].y;
+        }
+        
+        // Add new value at the end with slight upward bias
+        const lastValue = newData[newData.length - 1].y;
+        const change = (Math.random() * 5) - 1.5;
+        newData[newData.length - 1].y = lastValue + change;
+      }
+      
+      setChartData([...newData]);
+    }, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Draw the SVG chart path
+  const getPath = () => {
+    if (chartData.length === 0) return '';
+    
+    const height = 200;
+    const width = 600;
+    const maxValue = Math.max(...chartData.map(d => d.y));
+    const minValue = Math.min(...chartData.map(d => d.y));
+    const range = maxValue - minValue;
+    
+    const scaleY = (value) => height - ((value - minValue) / range) * height;
+    const scaleX = (index) => (index / (chartData.length - 1)) * width;
+    
+    let path = `M${scaleX(0)},${scaleY(chartData[0].y)}`;
+    
+    for (let i = 1; i < chartData.length; i++) {
+      path += ` L${scaleX(i)},${scaleY(chartData[i].y)}`;
+    }
+    
+    return path;
+  };
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  return (
+    <div className="w-full h-64 md:h-80 relative overflow-hidden">
+      <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none">
+        {/* Line chart */}
+        <path
+          d={getPath()}
+          fill="none"
+          stroke="#3366FF"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Gradient area under the line */}
+        <linearGradient id="gradientArea" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#3366FF" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#3366FF" stopOpacity="0" />
+        </linearGradient>
+        <path
+          d={`${getPath()} L${chartData.length > 0 ? 600 : 0},200 L0,200 Z`}
+          fill="url(#gradientArea)"
+        />
+        
+        {/* Animated pulse dot at the end of the line */}
+        {chartData.length > 0 && (
+          <circle
+            cx={600}
+            cy={chartData.length > 0 ? scaleY(chartData[chartData.length - 1].y) : 0}
+            r="4"
+            fill="#3366FF"
+            className="animate-pulse"
+          />
+        )}
+      </svg>
+    </div>
+  );
+
+  function scaleY(value) {
+    const height = 200;
+    const maxValue = Math.max(...chartData.map(d => d.y));
+    const minValue = Math.min(...chartData.map(d => d.y));
+    const range = maxValue - minValue;
+    return height - ((value - minValue) / range) * height;
+  }
+};
 
 export default function Home() {
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              pages/index.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="relative min-h-screen font-sans text-white bg-[#111111]">
+      {/* Gradient Background */}
+      <GradientBackground />
+      
+      <Head>
+        <title>ScalpGPT - AI-Powered Trading Analysis</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        <style>{`
+          :root {
+            --font-primary: 'Inter', sans-serif;
+            --green-color: #00C853;
+            --red-color: #FF3D71;
+            --blue-color: #3366FF;
+            --card-bg: rgba(26, 26, 31, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+          }
+          body {
+            font-family: var(--font-primary);
+            background-color: #111111;
+          }
+          .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+          }
+          .btn-primary {
+            background-color: var(--blue-color);
+            transition: all 0.3s ease;
+          }
+          .btn-primary:hover {
+            background-color: #4d7aff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(51, 102, 255, 0.4);
+          }
+          .btn-outline {
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+          }
+          .btn-outline:hover {
+            border-color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+          .pulse-effect {
+            animation: pulseEffect 2s infinite;
+          }
+          @keyframes pulseEffect {
+            0% { box-shadow: 0 0 0 0 rgba(51, 102, 255, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(51, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(51, 102, 255, 0); }
+          }
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+          @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+          }
+        `}</style>
+      </Head>
+      
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-20">
+        {/* Header/Nav */}
+        <header className="flex justify-between items-center mb-16">
+          <div className="flex items-center">
+            <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center mr-3">
+              <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
+            </div>
+            <span className="text-xl font-bold text-white">ScalpGPT</span>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Link href="/login" className="flex items-center text-white px-4 py-2 rounded-md text-sm btn-outline">
+              <LogIn className="h-4 w-4 mr-2" />
+              <span>Sign In</span>
+            </Link>
+            <Link href="/trading" className="bg-[rgba(255,255,255,0.05)] px-4 py-2 rounded-md text-sm hover:bg-[rgba(255,255,255,0.1)] transition-colors">
+              <span>Go to Dashboard</span>
+            </Link>
+          </div>
+        </header>
+        
+        {/* Hero Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+              AI-Powered <span className="text-[#3366FF]">Trading Analysis</span> at Your Fingertips
+            </h1>
+            <p className="text-gray-300 text-lg mb-8">
+              Gain an edge in the market with real-time AI insights. Analyze patterns, predict trends, and make data-driven decisions.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/create-profile" className="btn-primary pulse-effect text-white rounded-md py-3 px-6 font-medium text-center flex items-center justify-center">
+                <User className="h-5 w-5 mr-2" />
+                <span>Create Your Profile</span>
+                <ChevronRight className="h-5 w-5 ml-2" />
+              </Link>
+              <Link href="/login" className="bg-[rgba(255,255,255,0.05)] text-white rounded-md py-3 px-6 font-medium text-center hover:bg-[rgba(255,255,255,0.1)] transition-colors flex items-center justify-center">
+                <LogIn className="h-5 w-5 mr-2" />
+                <span>Sign In</span>
+              </Link>
+            </div>
+          </div>
+          
+          <div className="card p-6 animate-float">
+            <div className="bg-[rgba(0,0,0,0.2)] p-3 rounded-md mb-3">
+              <div className="flex items-center mb-2">
+                <BarChart2 className="h-4 w-4 text-[#3366FF] mr-2" />
+                <span className="text-sm text-white font-medium">Live Market Trends</span>
+              </div>
+              
+              <AnimatedStockChart />
+              
+              <div className="mt-3 flex justify-between items-center">
+                <div className="flex items-center">
+                  <TrendingUp className="h-4 w-4 text-[#00C853] mr-1" />
+                  <span className="text-xs text-[#00C853]">+2.8%</span>
+                </div>
+                <span className="text-xs text-gray-400">Updated just now</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        
+        {/* Features Section */}
+        <div className="mb-24">
+          <h2 className="text-2xl font-bold mb-12 text-center">Why Choose ScalpGPT</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                title: "AI-Powered Analysis",
+                description: "Our advanced algorithms analyze patterns and predict market movements in real-time."
+              },
+              {
+                title: "Custom Alerts",
+                description: "Set personalized alerts for price movements, trend changes, and market opportunities."
+              },
+              {
+                title: "Portfolio Tracking",
+                description: "Keep track of your investments and monitor progress toward your financial goals."
+              }
+            ].map((feature, index) => (
+              <div key={index} className="card p-6 hover:border-[#3366FF] transition-colors">
+                <div className="w-10 h-10 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center mb-4">
+                  <span className="text-[#3366FF] font-bold">{index + 1}</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
+                <p className="text-gray-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* CTA Section */}
+        <div className="card p-8 text-center mb-16">
+          <h2 className="text-2xl font-bold mb-4">Ready to start trading smarter?</h2>
+          <p className="text-gray-300 mb-6 max-w-lg mx-auto">
+            Create your profile now and gain access to our full suite of AI-powered trading tools.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/create-profile" className="btn-primary text-white rounded-md py-3 px-8 font-medium inline-block">
+              Get Started Now
+            </Link>
+            <Link href="/login" className="bg-[rgba(255,255,255,0.05)] text-white rounded-md py-3 px-8 font-medium inline-block hover:bg-[rgba(255,255,255,0.1)] transition-colors">
+              Sign In to Your Account
+            </Link>
+          </div>
+        </div>
+        
+        {/* Footer */}
+        <footer className="text-center text-gray-400 text-sm">
+          <p>© 2025 ScalpGPT. All rights reserved.</p>
+        </footer>
+      </div>
+      
+      {/* Global animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
