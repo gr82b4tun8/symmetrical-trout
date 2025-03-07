@@ -78,6 +78,13 @@ export default function Home() {
     fetchUserData();
   }, []);
 
+  // Logging for debugging has been removed
+
+  // Fetch stock data when date changes
+  useEffect(() => {
+    fetchStockData();
+  }, [selectedDate]);
+
   const isWithinTradingHours = (timestamp) => {
     const date = new Date(timestamp);
     const hours = date.getHours();
@@ -143,32 +150,28 @@ export default function Home() {
     }
   };
 
-  // Function to calculate progress percentage based on current portfolio value
-  const calculateProgress = () => {
-    if (!stats || !stats.currentPrice || !portfolioGoal) return 0;
-    
-    // Calculate current portfolio value based on starting portfolio + current stock price
-    const currentPortfolioValue = startingPortfolio + parseFloat(stats.currentPrice);
-    
-    // Calculate progress towards goal
-    const progress = (currentPortfolioValue / portfolioGoal) * 100;
-    return Math.min(progress, 100); // Cap at 100%
-  };
+  // Progress calculation has been removed
 
   // Format currency
   const formatCurrency = (value) => {
-    if (!value && value !== 0) return '$0.00';
+    // Ensure we have a valid numeric value
+    const numericValue = parseFloat(value);
+    if (isNaN(numericValue)) return '$0';
+    
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: 'USD',
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(numericValue);
   };
 
   // Function to calculate current portfolio value
   const getCurrentPortfolioValue = () => {
-    if (!stats || !stats.currentPrice) return startingPortfolio;
-    return startingPortfolio + parseFloat(stats.currentPrice);
+    // Ensure we have valid numbers
+    const startingValue = Number(startingPortfolio) || 0;
+    const currentPrice = stats && stats.currentPrice ? Number(stats.currentPrice) : 0;
+    
+    return startingValue + currentPrice;
   };
 
   // Function to capture screenshot and send to ChatGPT
@@ -228,10 +231,6 @@ export default function Home() {
       }
     }
   };
-
-  useEffect(() => {
-    fetchStockData();
-  }, [selectedDate]);
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
@@ -439,20 +438,6 @@ export default function Home() {
             border-left: 3px solid var(--blue-color);
           }
           
-          .progress-bar {
-            height: 8px;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #3366FF 0%, #8A33FF 100%);
-            transition: width 0.5s ease;
-          }
-          
-          .progress-track {
-            height: 8px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-          }
-          
           .portfolio-bubble {
             background: radial-gradient(circle at 70% 70%, rgba(51, 102, 255, 0.15), rgba(0, 200, 83, 0.15));
             border-radius: 999px;
@@ -568,6 +553,7 @@ export default function Home() {
               </div>
             </div>
             
+            {/* Portfolio Goal Card - Progress Bar Removed */}
             <div className="portfolio-bubble p-6 flex items-center">
               <div className="rounded-full p-3 bg-[rgba(0,200,83,0.15)] mr-4">
                 <Target className="h-6 w-6 text-[#00C853]" />
@@ -582,18 +568,6 @@ export default function Home() {
                       formatCurrency(portfolioGoal)
                     )}
                   </p>
-                  
-                  <div className="progress-track mt-2">
-                    <div 
-                      className="progress-bar" 
-                      style={{ width: `${calculateProgress()}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-gray-400">Progress</p>
-                    <p className="text-xs text-white font-medium">{calculateProgress().toFixed(0)}%</p>
-                  </div>
                 </div>
               </div>
             </div>

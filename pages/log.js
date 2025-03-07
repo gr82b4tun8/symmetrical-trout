@@ -3,31 +3,19 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, parseISO } from 'date-fns';
-import { Calendar, TrendingUp, ArrowLeft, ArrowRight, Menu, X, Plus, DollarSign, Activity, Search, Settings, BarChart2 } from 'lucide-react';
+import { 
+  Calendar, TrendingUp, ArrowLeft, ArrowRight, Menu, X, Plus, 
+  DollarSign, Activity, Search, Settings, BarChart2 
+} from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 // Import our CSS gradient background
 import GradientBackground from '../components/GradientBackground';
 
-// Sample trade data (replace with API call or database fetch)
-const sampleTradeData = {
-  '2025-03-01': { profit: -45.12, trades: 12 },
-  '2025-03-02': { profit: 78.94, trades: 15 },
-  '2025-03-03': { profit: -21.30, trades: 8 },
-  '2025-03-04': { profit: 112.50, trades: 10 },
-  '2025-03-05': { profit: 67.25, trades: 9 },
-  '2025-03-10': { profit: -33.80, trades: 14 },
-  '2025-03-12': { profit: 210.45, trades: 18 },
-  '2025-03-15': { profit: 95.20, trades: 7 },
-  '2025-03-18': { profit: -56.30, trades: 11 },
-  '2025-03-22': { profit: 187.65, trades: 20 },
-  '2025-03-25': { profit: -73.40, trades: 15 },
-  '2025-03-27': { profit: 142.18, trades: 13 },
-};
-
 export default function LogCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [tradeData, setTradeData] = useState(sampleTradeData);
+  const [tradeData, setTradeData] = useState({});
   const [monthStats, setMonthStats] = useState({
     totalProfit: 0,
     winningDays: 0,
@@ -36,8 +24,78 @@ export default function LogCalendar() {
     winPercentage: 0,
   });
   
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+
+  // Trade form state
+  const [tradeForm, setTradeForm] = useState({
+    symbol: '',
+    time: '',
+    entryPrice: '',
+    exitPrice: '',
+    contracts: '',
+    fees: ''
+  });
+  
   const [timeFilter, setTimeFilter] = useState('month');
 
+  // Fetch user and trade data
+  useEffect(() => {
+    const fetchUserAndTrades = async () => {
+      try {
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) throw userError;
+        if (user) setUserId(user.id);
+
+        // Fetch trades for the current month
+        await fetchTrades(user.id);
+
+      } catch (error) {
+        console.error('Error fetching user or trades:', error);
+      }
+    };
+
+    fetchUserAndTrades();
+  }, [currentDate]);
+
+  // Fetch trades for the current month
+  const fetchTrades = async (userId) => {
+    try {
+      const startDate = format(startOfMonth(currentDate), 'yyyy-MM-dd');
+      const endDate = format(endOfMonth(currentDate), 'yyyy-MM-dd');
+
+      // Fetch trades from Supabase
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (error) throw error;
+
+      // Transform data for the calendar
+      const tradesData = {};
+      data.forEach(trade => {
+        if (!tradesData[trade.date]) {
+          tradesData[trade.date] = { profit: 0, trades: 0 };
+        }
+        tradesData[trade.date].profit += parseFloat(trade.profit);
+        tradesData[trade.date].trades += 1;
+      });
+
+      setTradeData(tradesData);
+    } catch (error) {
+      console.error('Error fetching trades:', error);
+    }
+  };
+
+  // Update month statistics when trade data changes
   useEffect(() => {
     // Calculate month statistics
     const stats = Object.entries(tradeData)
@@ -62,6 +120,79 @@ export default function LogCalendar() {
 
     setMonthStats(stats);
   }, [currentDate, tradeData]);
+
+  // Handle date selection in calendar
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setIsModalOpen(true);
+    setTradeForm({
+      symbol: '',
+      time: '',
+      entryPrice: '',
+      exitPrice: '',
+      contracts: '',
+      fees: ''
+    });
+  };
+
+  // Handle trade form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setTradeForm({
+      ...tradeForm,
+      [name]: value
+    });
+  };
+
+  // Calculate profit
+  const calculateProfit = () => {
+    const entryPrice = parseFloat(tradeForm.entryPrice) || 0;
+    const exitPrice = parseFloat(tradeForm.exitPrice) || 0;
+    const contracts = parseInt(tradeForm.contracts) || 0;
+    const fees = parseFloat(tradeForm.fees) || 0;
+    
+    // Calculate profit: (exit - entry) * contracts - fees
+    return ((exitPrice - entryPrice) * contracts) - fees;
+  };
+
+  // Save trade to Supabase
+  const saveTrade = async (e) => {
+    e.preventDefault();
+    if (!userId || !selectedDate) return;
+
+    try {
+      setLoading(true);
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const profit = calculateProfit();
+
+      // Insert trade to Supabase
+      const { data, error } = await supabase
+        .from('trades')
+        .insert([
+          {
+            user_id: userId,
+            date: dateString,
+            symbol: tradeForm.symbol.toUpperCase(),
+            time: tradeForm.time,
+            entry_price: parseFloat(tradeForm.entryPrice),
+            exit_price: parseFloat(tradeForm.exitPrice),
+            contracts: parseInt(tradeForm.contracts),
+            fees: parseFloat(tradeForm.fees),
+            profit: profit
+          }
+        ]);
+
+      if (error) throw error;
+
+      // Refresh trades data
+      await fetchTrades(userId);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving trade:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDaysInMonth = () => {
     const start = startOfMonth(currentDate);
@@ -188,11 +319,69 @@ export default function LogCalendar() {
           /* Subtle hover effect on calendar days */
           .calendar-day {
             transition: all 0.2s ease;
+            cursor: pointer;
           }
           
           .calendar-day:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          }
+          
+          /* Modal backdrop */
+          .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          /* Modal animations */
+          .modal-enter {
+            animation: modalEnter 0.3s forwards;
+          }
+          
+          @keyframes modalEnter {
+            from {
+              opacity: 0;
+              transform: scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          
+          /* Form input styles */
+          .form-input {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: white;
+            transition: all 0.2s ease;
+            width: 100%;
+          }
+          
+          .form-input:focus {
+            outline: none;
+            border-color: var(--blue-color);
+            box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.2);
+          }
+          
+          .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #999;
+            margin-bottom: 6px;
+            display: block;
           }
         `}</style>
         <title>Trading Log | ScalpGPT</title>
@@ -242,7 +431,13 @@ export default function LogCalendar() {
           </div>
           
           <div className="mt-auto p-6">
-            <button className="w-full bg-[#3366FF] text-white rounded-md py-3 flex items-center justify-center">
+            <button 
+              onClick={() => {
+                setSelectedDate(new Date());
+                setIsModalOpen(true);
+              }}
+              className="w-full bg-[#3366FF] text-white rounded-md py-3 flex items-center justify-center"
+            >
               <span className="mr-2">New Trade</span>
               <span className="text-lg">+</span>
             </button>
@@ -318,8 +513,12 @@ export default function LogCalendar() {
               </div>
               
               <div className="mt-4 flex space-x-1">
-                <div className="h-1.5 rounded-full bg-[#00C853]" style={{ width: `${monthStats.winningDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
-                <div className="h-1.5 rounded-full bg-[#FF3D71]" style={{ width: `${monthStats.losingDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
+                {(monthStats.winningDays > 0 || monthStats.losingDays > 0) && (
+                  <>
+                    <div className="h-1.5 rounded-full bg-[#00C853]" style={{ width: `${monthStats.winningDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
+                    <div className="h-1.5 rounded-full bg-[#FF3D71]" style={{ width: `${monthStats.losingDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
+                  </>
+                )}
               </div>
             </div>
             
@@ -389,7 +588,13 @@ export default function LogCalendar() {
                     </button>
                   </div>
                   
-                  <button className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs">
+                  <button 
+                    onClick={() => {
+                      setSelectedDate(new Date());
+                      setIsModalOpen(true);
+                    }}
+                    className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs"
+                  >
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     Add Trade
                   </button>
@@ -430,6 +635,7 @@ export default function LogCalendar() {
                     <div 
                       key={dateString}
                       className={dayClasses}
+                      onClick={() => handleDateSelect(date)}
                     >
                       <span className={`text-xs font-medium self-end ${isToday(date) ? 'bg-[#3366FF] text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-gray-400'}`}>
                         {format(date, 'd')}
@@ -477,6 +683,139 @@ export default function LogCalendar() {
           </div>
         </div>
       </div>
+      
+      {/* Trade Entry Modal */}
+      {isModalOpen && (
+        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
+          <div 
+            className="card p-6 w-full max-w-md mx-4 modal-enter"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-white">
+                {selectedDate ? `Add Trade - ${format(selectedDate, 'MMMM d, yyyy')}` : 'Add Trade'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+            
+            <form onSubmit={saveTrade}>
+              <div className="space-y-4">
+                <div>
+                  <label className="form-label" htmlFor="symbol">Symbol</label>
+                  <input
+                    id="symbol"
+                    name="symbol"
+                    type="text"
+                    className="form-input"
+                    placeholder="AAPL"
+                    value={tradeForm.symbol}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="form-label" htmlFor="time">Time</label>
+                  <input
+                    id="time"
+                    name="time"
+                    type="time"
+                    className="form-input"
+                    value={tradeForm.time}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label" htmlFor="entryPrice">Entry Price</label>
+                    <input
+                      id="entryPrice"
+                      name="entryPrice"
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={tradeForm.entryPrice}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="form-label" htmlFor="exitPrice">Exit Price</label>
+                    <input
+                      id="exitPrice"
+                      name="exitPrice"
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={tradeForm.exitPrice}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label" htmlFor="contracts">Contracts</label>
+                    <input
+                      id="contracts"
+                      name="contracts"
+                      type="number"
+                      className="form-input"
+                      placeholder="1"
+                      value={tradeForm.contracts}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="form-label" htmlFor="fees">Fees</label>
+                    <input
+                      id="fees"
+                      name="fees"
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={tradeForm.fees}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-400">Profit/Loss</span>
+                    <span className={`text-lg font-bold ${calculateProfit() >= 0 ? 'text-[#00C853]' : 'text-[#FF3D71]'}`}>
+                      {calculateProfit() >= 0 ? '+' : ''}${calculateProfit().toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 bg-[#3366FF] text-white rounded-md font-medium hover:bg-[#4d7aff] transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : 'Save Trade'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
       {/* Add global styles for animations */}
       <style jsx global>{`
