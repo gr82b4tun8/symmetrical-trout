@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target, User } from 'lucide-react';
+import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target, User, Upload } from 'lucide-react';
 import Head from 'next/head';
 import html2canvas from 'html2canvas';
 import Link from 'next/link';
@@ -78,8 +78,6 @@ export default function Home() {
     fetchUserData();
   }, []);
 
-  // Logging for debugging has been removed
-
   // Fetch stock data when date changes
   useEffect(() => {
     fetchStockData();
@@ -149,8 +147,6 @@ export default function Home() {
       setLoading(false);
     }
   };
-
-  // Progress calculation has been removed
 
   // Format currency
   const formatCurrency = (value) => {
@@ -481,6 +477,13 @@ export default function Home() {
                 <BarChart2 className="h-5 w-5 text-[#3366FF] mr-3" />
                 <span className="text-white font-medium">Analyze</span>
               </div>
+              
+              <Link href="/external-chart" className="block">
+                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
+                  <Upload className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-400">External Charts</span>
+                </div>
+              </Link>
               
               <Link href="/log" className="block">
                 <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
