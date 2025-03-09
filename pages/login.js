@@ -59,35 +59,63 @@ export default function Login() {
       setIsSubmitting(true);
       
       try {
-        // Handle both newer and older versions of Supabase
-        let authResponse;
+        console.log("Attempting to sign in with:", formData.email);
         
-        // Try the newer method first
+        // First try the newer Supabase method
+        let authResponse;
         try {
+          console.log("Using newer sign-in method (signInWithPassword)");
           authResponse = await supabase.auth.signInWithPassword({
             email: formData.email,
             password: formData.password,
           });
+          
+          // Log response status for debugging
+          console.log("Auth response:", JSON.stringify({
+            user: authResponse.data?.user ? "exists" : "null",
+            error: authResponse.error ? authResponse.error.message : "none"
+          }));
+          
         } catch (methodError) {
           // If the newer method fails, try the older method
-          console.log("Trying older sign-in method");
+          console.log("Newer method failed, trying older sign-in method");
           authResponse = await supabase.auth.signIn({
             email: formData.email,
             password: formData.password,
           });
+          
+          // Log response for the older method
+          console.log("Auth response (older method):", JSON.stringify({
+            user: authResponse.user ? "exists" : "null",
+            error: authResponse.error ? authResponse.error.message : "none"
+          }));
         }
         
-        const { error } = authResponse;
+        // Check for errors in a way that works with both API versions
+        const error = authResponse.error || (authResponse.data && !authResponse.data.user);
         
-        if (error) throw error;
+        if (error) {
+          // Handle specific error messages
+          const errorMessage = authResponse.error?.message || "Invalid email or password";
+          console.error('Login error details:', errorMessage);
+          throw new Error(errorMessage);
+        }
         
-        // Redirect to profile page on successful login
-        console.log("Login successful, redirecting...");
-        window.location.href = '/my-profile';
+        // Login successful
+        console.log("Login successful, redirecting to profile...");
+        
+        // Use Next.js router for redirection instead of window.location
+        router.push('/my-profile');
         
       } catch (error) {
-        console.error('Login error:', error);
-        setServerError('Invalid email or password. Please try again.');
+        console.error('Login failed:', error);
+        
+        // Provide a more user-friendly error message
+        if (error.message.includes("Invalid login credentials")) {
+          setServerError('Invalid email or password. Please check your credentials and try again.');
+        } else {
+          setServerError(error.message || 'An error occurred during sign in. Please try again.');
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -275,7 +303,7 @@ export default function Login() {
           {/* Create an account */}
           <div className="text-center">
             <p className="text-gray-400 text-sm">
-              Don't have an account? <Link href="/create-profile" className="text-[#3366FF]">Create Profile</Link>
+              Don't have an account? <Link href="/create-profile" className="text-[#3366FF]">Create Account</Link>
             </p>
           </div>
         </div>
