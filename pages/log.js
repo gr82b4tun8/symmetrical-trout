@@ -13,6 +13,20 @@ import { supabase } from '../lib/supabaseClient';
 import GradientBackground from '../components/GradientBackground';
 
 export default function LogCalendar() {
+  // Function to update portfolio value in database
+  const updatePortfolioValue = async (newValue) => {
+    try {
+      const { error } = await supabase
+        .from('trading_goals')
+        .update({ starting_portfolio_size: newValue })
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      setPortfolioValue(newValue);
+    } catch (error) {
+      console.error('Error updating portfolio value:', error);
+    }
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tradeData, setTradeData] = useState({});
@@ -29,6 +43,7 @@ export default function LogCalendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [portfolioValue, setPortfolioValue] = useState(0);
 
   // Trade form state
   const [tradeForm, setTradeForm] = useState({
@@ -50,11 +65,28 @@ export default function LogCalendar() {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError) throw userError;
-        if (user) setUserId(user.id);
-
-        // Fetch trades for the current month
-        await fetchTrades(user.id);
-
+        if (user) {
+          setUserId(user.id);
+          
+          // Fetch user's trading goals to get portfolio value
+          const { data: goalsData, error: goalsError } = await supabase
+            .from('trading_goals')
+            .select('starting_portfolio_size')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (goalsError && goalsError.code !== 'PGRST116') {
+            // PGRST116 is "no rows returned" error, which we handle
+            throw goalsError;
+          }
+          
+          if (goalsData) {
+            setPortfolioValue(goalsData.starting_portfolio_size || 0);
+          }
+          
+          // Fetch trades for the current month
+          await fetchTrades(user.id);
+        }
       } catch (error) {
         console.error('Error fetching user or trades:', error);
       }
@@ -144,15 +176,16 @@ export default function LogCalendar() {
     });
   };
 
-  // Calculate profit
+  // Calculate profit - UPDATED FOR OPTIONS CONTRACTS (multiply by 100)
   const calculateProfit = () => {
     const entryPrice = parseFloat(tradeForm.entryPrice) || 0;
     const exitPrice = parseFloat(tradeForm.exitPrice) || 0;
     const contracts = parseInt(tradeForm.contracts) || 0;
     const fees = parseFloat(tradeForm.fees) || 0;
     
-    // Calculate profit: (exit - entry) * contracts - fees
-    return ((exitPrice - entryPrice) * contracts) - fees;
+    // Calculate profit: (exit - entry) * contracts * 100 - fees
+    // Multiplying by 100 since 1 options contract represents 100 shares
+    return ((exitPrice - entryPrice) * contracts * 100) - fees;
   };
 
   // Save trade to Supabase
@@ -183,6 +216,19 @@ export default function LogCalendar() {
         ]);
 
       if (error) throw error;
+
+      // Update portfolio value
+      const newPortfolioValue = portfolioValue + profit;
+      
+      // Update portfolio value in trading_goals table
+      const { error: updateError } = await supabase
+        .from('trading_goals')
+        .update({ starting_portfolio_size: newPortfolioValue })
+        .eq('user_id', userId);
+      
+      if (updateError) throw updateError;
+      
+      setPortfolioValue(newPortfolioValue);
 
       // Refresh trades data
       await fetchTrades(userId);
@@ -456,14 +502,35 @@ export default function LogCalendar() {
             </div>
             
             <div className="flex items-center mt-4 sm:mt-0">
-              <div className="w-8 h-8 rounded-full bg-white p-1.5 flex items-center justify-center">
-                <Settings className="h-4 w-4 text-[#111111]" />
-              </div>
+              <Link href="/my-profile">
+                <div className="w-8 h-8 rounded-full bg-white p-1.5 flex items-center justify-center">
+                  <Settings className="h-4 w-4 text-[#111111]" />
+                </div>
+              </Link>
             </div>
           </div>
           
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Portfolio Value Card */}
+            <div className="card p-6">
+              <p className="text-gray-400 text-xs font-medium mb-1">Portfolio Value</p>
+              <div className="flex items-baseline">
+                <span className="text-2xl font-bold text-white">
+                  ${portfolioValue.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="flex items-center mt-4">
+                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-[#3366FF]" />
+                </div>
+                <p className="text-xs text-gray-400 ml-2">
+                  Current balance
+                </p>
+              </div>
+            </div>
+            
             {/* Total Profit Card */}
             <div className="card p-6">
               <p className="text-gray-400 text-xs font-medium mb-1">Month P/L</p>
