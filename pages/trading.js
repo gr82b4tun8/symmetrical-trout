@@ -653,27 +653,57 @@ export default function Home() {
 
   return (
     <>
-      <div className="relative min-h-screen font-sans text-white bg-[#111111]">
-        {/* CSS Gradient Background - No Three.js needed */}
+      <Head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      </Head>
+      
+      {/* Use the Layout component */}
+      <Layout>
+        {/* Add GradientBackground inside the Layout */}
         <GradientBackground />
         
-        <Head>
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-        </Head>
-        
-        {/* Use the Layout component */}
-        <Layout>
-          {content}
-        </Layout>
-      </div>
+        {content}
+      </Layout>
 
       {/* Separated styles to another component */}
       <GlobalStyles />
     </>
   );
 }
+
+// Custom style for the gradient background
+const CustomGradientStyles = () => {
+  return (
+    <style jsx global>{`
+      .gradient-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+          radial-gradient(circle at 80% 30%, rgb(104, 142, 82) 0%, transparent 40%),
+          radial-gradient(circle at 20% 70%, rgb(167, 37, 37) 0%, transparent 40%);
+        animation: gradientAnimation 5s ease infinite;
+        z-index: 0;
+      }
+      
+      @keyframes gradientAnimation {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+    `}</style>
+  );
+};
 
 // Extracted all styles to a separate component to avoid any issues
 function GlobalStyles() {

@@ -22,16 +22,16 @@ const GradientBackground = () => {
         }
         
         .gradient-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-image: 
-            radial-gradient(circle at 20% 30%, rgb(104, 142, 82) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, rgb(167, 37, 37) 0%, transparent 40%);
-          animation: gradientAnimation 5s ease infinite;
-        }
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 80% 30%, rgb(104, 142, 82) 0%, transparent 40%),
+    radial-gradient(circle at 20% 70%, rgb(167, 37, 37) 0%, transparent 40%);
+  animation: gradientAnimation 5s ease infinite;
+}
         
         .noise-overlay {
           position: absolute;
