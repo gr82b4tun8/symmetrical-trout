@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-// Import our CSS gradient background
+// Import the Layout component
+import Layout from '../components/Layout';
+// Import GradientBackground component
 import GradientBackground from '../components/GradientBackground';
 
 export default function LogCalendar() {
@@ -28,7 +30,6 @@ export default function LogCalendar() {
     }
   };
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tradeData, setTradeData] = useState({});
   const [monthStats, setMonthStats] = useState({
     totalProfit: 0,
@@ -259,8 +260,8 @@ export default function LogCalendar() {
   const dayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
-    <div className="relative min-h-screen font-sans text-white bg-[#111111]">
-      {/* CSS Gradient Background */}
+    <Layout>
+      {/* Add Gradient Background */}
       <GradientBackground />
       
       <Head>
@@ -279,6 +280,7 @@ export default function LogCalendar() {
           body {
             font-family: var(--font-primary);
             background-color: #111111;
+            color: white;
           }
           .card {
             background: var(--card-bg);
@@ -315,19 +317,6 @@ export default function LogCalendar() {
             background: linear-gradient(90deg, #3366FF 0%, #8A33FF 100%);
             border-radius: 3px;
             margin-top: 4px;
-          }
-          
-          .sidebar-item {
-            transition: all 0.2s ease;
-          }
-          
-          .sidebar-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-          }
-          
-          .sidebar-item-active {
-            background-color: rgba(51, 102, 255, 0.1);
-            border-left: 3px solid var(--blue-color);
           }
           
           .profit-day {
@@ -433,319 +422,248 @@ export default function LogCalendar() {
         <title>Trading Log | ScalpGPT</title>
       </Head>
       
-      {/* Mobile sidebar toggle */}
-      <button 
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed z-50 bottom-4 right-4 bg-[#3366FF] text-white p-3 rounded-full shadow-lg"
-      >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-      
-      {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full z-40 w-64 bg-[#111111]/90 backdrop-blur-xl border-r border-[rgba(255,255,255,0.1)] transform transition-all duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="flex flex-col h-full">
-          <div className="p-6">
-            <div className="flex items-center mb-8">
-              <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center">
-                <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-gray-400 mb-1">Hi there, welcome back!</p>
+            <h1 className="text-2xl font-bold text-white">Trading Log</h1>
+          </div>
+          
+          <div className="flex items-center mt-4 sm:mt-0">
+            <Link href="/my-profile">
+              <div className="w-8 h-8 rounded-full bg-white p-1.5 flex items-center justify-center">
+                <Settings className="h-4 w-4 text-[#111111]" />
               </div>
-              <span className="ml-3 text-xl font-bold text-white">
-                ScalpGPT
+            </Link>
+          </div>
+        </div>
+        
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Portfolio Value Card */}
+          <div className="card p-6">
+            <p className="text-gray-400 text-xs font-medium mb-1">Portfolio Value</p>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold text-white">
+                ${portfolioValue.toFixed(2)}
               </span>
             </div>
             
-            <div className="space-y-1">
-              <Link href="/trading">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <BarChart2 className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Analyze</span>
-                </div>
-              </Link>
-              
-              <div className="sidebar-item sidebar-item-active px-4 py-3 rounded-md flex items-center">
-                <DollarSign className="h-5 w-5 text-[#3366FF] mr-3" />
-                <span className="text-white font-medium">Payouts</span>
+            <div className="flex items-center mt-4">
+              <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
+                <DollarSign className="h-4 w-4 text-[#3366FF]" />
               </div>
-              
-              <Link href="/planning">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <Calendar className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Planning</span>
-                </div>
-              </Link>
+              <p className="text-xs text-gray-400 ml-2">
+                Current balance
+              </p>
             </div>
           </div>
           
-          <div className="mt-auto p-6">
-            <button 
-              onClick={() => {
-                setSelectedDate(new Date());
-                setIsModalOpen(true);
-              }}
-              className="w-full bg-[#3366FF] text-white rounded-md py-3 flex items-center justify-center"
-            >
-              <span className="mr-2">New Trade</span>
-              <span className="text-lg">+</span>
-            </button>
+          {/* Total Profit Card */}
+          <div className="card p-6">
+            <p className="text-gray-400 text-xs font-medium mb-1">Month P/L</p>
+            <div className="flex items-baseline">
+              <span className={`text-2xl font-bold ${monthStats.totalProfit >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}>
+                ${monthStats.totalProfit.toFixed(2)}
+              </span>
+            </div>
+            
+            <div className="flex items-center mt-4">
+              <div className={`w-8 h-8 rounded-full ${monthStats.totalProfit >= 0 ? 'bg-[rgba(0,200,83,0.1)]' : 'bg-[rgba(255,61,113,0.1)]'} flex items-center justify-center`}>
+                <DollarSign className={`h-4 w-4 ${monthStats.totalProfit >= 0 ? 'text-[#00C853]' : 'text-[#FF3D71]'}`} />
+              </div>
+              <p className="text-xs text-gray-400 ml-2">
+                {currentMonth}
+              </p>
+            </div>
+          
+            <div className="flex items-center mt-4">
+              <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
+                <Activity className="h-4 w-4 text-[#3366FF]" />
+              </div>
+              <p className="text-xs text-gray-400 ml-2">
+                This month
+              </p>
+            </div>
+          </div>
+          
+          {/* Win/Loss Card */}
+          <div className="card p-6">
+            <p className="text-gray-400 text-xs font-medium mb-1">Win/Loss</p>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold text-white">
+                {monthStats.winningDays}/{monthStats.losingDays}
+              </span>
+              <span className="ml-2 text-xs text-gray-400">days</span>
+            </div>
+            
+            <div className="mt-4 flex space-x-1">
+              {(monthStats.winningDays > 0 || monthStats.losingDays > 0) && (
+                <>
+                  <div className="h-1.5 rounded-full bg-[#00C853]" style={{ width: `${monthStats.winningDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
+                  <div className="h-1.5 rounded-full bg-[#FF3D71]" style={{ width: `${monthStats.losingDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Win Rate Card */}
+          <div className="card p-6 relative overflow-hidden">
+            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-[#00C853] opacity-10 animate-pulse"></div>
+            
+            <p className="text-gray-400 text-xs font-medium mb-1">Win Rate</p>
+            <div className="flex items-baseline">
+              <span className="text-2xl font-bold text-[#00C853] green-glow">
+                {monthStats.winPercentage}%
+              </span>
+            </div>
+            
+            <div className="flex items-center mt-4">
+              <div className="w-8 h-8 rounded-full bg-[rgba(0,200,83,0.1)] flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-[#00C853]" />
+              </div>
+              <p className="text-xs text-gray-400 ml-2">
+                Success rate
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Main content */}
-      <div className="md:ml-64 p-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-gray-400 mb-1">Hi there, welcome back!</p>
-              <h1 className="text-2xl font-bold text-white">Trading Log</h1>
-            </div>
-            
-            <div className="flex items-center mt-4 sm:mt-0">
-              <Link href="/my-profile">
-                <div className="w-8 h-8 rounded-full bg-white p-1.5 flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-[#111111]" />
-                </div>
-              </Link>
-            </div>
-          </div>
-          
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Portfolio Value Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-xs font-medium mb-1">Portfolio Value</p>
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold text-white">
-                  ${portfolioValue.toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="flex items-center mt-4">
-                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-[#3366FF]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Current balance
-                </p>
-              </div>
-            </div>
-            
-            {/* Total Profit Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-xs font-medium mb-1">Month P/L</p>
-              <div className="flex items-baseline">
-                <span className={`text-2xl font-bold ${monthStats.totalProfit >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}>
-                  ${monthStats.totalProfit.toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="flex items-center mt-4">
-                <div className={`w-8 h-8 rounded-full ${monthStats.totalProfit >= 0 ? 'bg-[rgba(0,200,83,0.1)]' : 'bg-[rgba(255,61,113,0.1)]'} flex items-center justify-center`}>
-                  <DollarSign className={`h-4 w-4 ${monthStats.totalProfit >= 0 ? 'text-[#00C853]' : 'text-[#FF3D71]'}`} />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  {currentMonth}
-                </p>
-              </div>
-            </div>
-            
-            {/* Total Trades Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-xs font-medium mb-1">Total Trades</p>
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold text-white">
-                  {monthStats.totalTrades}
-                </span>
-              </div>
-              
-              <div className="flex items-center mt-4">
-                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
-                  <Activity className="h-4 w-4 text-[#3366FF]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  This month
-                </p>
-              </div>
-            </div>
-            
-            {/* Win/Loss Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-xs font-medium mb-1">Win/Loss</p>
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold text-white">
-                  {monthStats.winningDays}/{monthStats.losingDays}
-                </span>
-                <span className="ml-2 text-xs text-gray-400">days</span>
-              </div>
-              
-              <div className="mt-4 flex space-x-1">
-                {(monthStats.winningDays > 0 || monthStats.losingDays > 0) && (
-                  <>
-                    <div className="h-1.5 rounded-full bg-[#00C853]" style={{ width: `${monthStats.winningDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
-                    <div className="h-1.5 rounded-full bg-[#FF3D71]" style={{ width: `${monthStats.losingDays / (monthStats.winningDays + monthStats.losingDays) * 100}%` }}></div>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* Win Rate Card */}
-            <div className="card p-6 relative overflow-hidden">
-              <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-[#00C853] opacity-10 animate-pulse"></div>
-              
-              <p className="text-gray-400 text-xs font-medium mb-1">Win Rate</p>
-              <div className="flex items-baseline">
-                <span className="text-2xl font-bold text-[#00C853] green-glow">
-                  {monthStats.winPercentage}%
-                </span>
-              </div>
-              
-              <div className="flex items-center mt-4">
-                <div className="w-8 h-8 rounded-full bg-[rgba(0,200,83,0.1)] flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-[#00C853]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Success rate
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Calendar Section */}
-          <div className="card overflow-hidden mb-8">
-            <div className="p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <h2 className="text-lg font-semibold text-white">{currentMonth}</h2>
-                  <div className="flex space-x-1">
-                    <button 
-                      onClick={prevMonth}
-                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
-                    >
-                      <ArrowLeft size={16} className="text-gray-400" />
-                    </button>
-                    <button 
-                      onClick={nextMonth}
-                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
-                    >
-                      <ArrowRight size={16} className="text-gray-400" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="mt-4 sm:mt-0 flex space-x-2">
-                  <div className="flex space-x-2 bg-[rgba(255,255,255,0.05)] rounded-md p-1">
-                    <button 
-                      className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'week' ? 'tab-active' : 'tab text-gray-400'}`}
-                      onClick={() => setTimeFilter('week')}
-                    >
-                      Week
-                    </button>
-                    <button 
-                      className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'month' ? 'tab-active' : 'tab text-gray-400'}`}
-                      onClick={() => setTimeFilter('month')}
-                    >
-                      Month
-                    </button>
-                    <button 
-                      className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'year' ? 'tab-active' : 'tab text-gray-400'}`}
-                      onClick={() => setTimeFilter('year')}
-                    >
-                      Year
-                    </button>
-                  </div>
-                  
+        
+        {/* Calendar Section */}
+        <div className="card overflow-hidden mb-8">
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-semibold text-white">{currentMonth}</h2>
+                <div className="flex space-x-1">
                   <button 
-                    onClick={() => {
-                      setSelectedDate(new Date());
-                      setIsModalOpen(true);
-                    }}
-                    className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs"
+                    onClick={prevMonth}
+                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                    Add Trade
+                    <ArrowLeft size={16} className="text-gray-400" />
+                  </button>
+                  <button 
+                    onClick={nextMonth}
+                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
+                  >
+                    <ArrowRight size={16} className="text-gray-400" />
                   </button>
                 </div>
               </div>
               
-              {/* Days of week header */}
-              <div className="grid grid-cols-7 text-center mb-1">
-                {dayOfWeek.map((day) => (
-                  <div key={day} className="text-xs font-medium text-gray-400 py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {daysInMonth.map((date) => {
-                  const dateString = format(date, 'yyyy-MM-dd');
-                  const dayData = tradeData[dateString];
-                  const hasData = !!dayData;
-                  const isWinning = hasData && dayData.profit > 0;
-                  const isLosing = hasData && dayData.profit < 0;
-                  
-                  let dayClasses = "calendar-day p-2 rounded-md border border-[rgba(255,255,255,0.05)] min-h-[80px] flex flex-col relative";
-                  
-                  if (isToday(date)) {
-                    dayClasses += " border-[#3366FF]";
-                  }
-                  
-                  if (isWinning) {
-                    dayClasses += " profit-day";
-                  } else if (isLosing) {
-                    dayClasses += " loss-day";
-                  }
-                  
-                  return (
-                    <div 
-                      key={dateString}
-                      className={dayClasses}
-                      onClick={() => handleDateSelect(date)}
-                    >
-                      <span className={`text-xs font-medium self-end ${isToday(date) ? 'bg-[#3366FF] text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-gray-400'}`}>
-                        {format(date, 'd')}
-                      </span>
-                      
-                      {hasData && (
-                        <div className="mt-auto">
-                          <div className={`text-sm font-semibold ${isWinning ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}>
-                            {dayData.profit > 0 ? '+' : ''}{dayData.profit.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {dayData.trades} trades
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="mt-4 sm:mt-0 flex space-x-2">
+                <div className="flex space-x-2 bg-[rgba(255,255,255,0.05)] rounded-md p-1">
+                  <button 
+                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'week' ? 'tab-active' : 'tab text-gray-400'}`}
+                    onClick={() => setTimeFilter('week')}
+                  >
+                    Week
+                  </button>
+                  <button 
+                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'month' ? 'tab-active' : 'tab text-gray-400'}`}
+                    onClick={() => setTimeFilter('month')}
+                  >
+                    Month
+                  </button>
+                  <button 
+                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'year' ? 'tab-active' : 'tab text-gray-400'}`}
+                    onClick={() => setTimeFilter('year')}
+                  >
+                    Year
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    setSelectedDate(new Date());
+                    setIsModalOpen(true);
+                  }}
+                  className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Trade
+                </button>
               </div>
             </div>
+            
+            {/* Days of week header */}
+            <div className="grid grid-cols-7 text-center mb-1">
+              {dayOfWeek.map((day) => (
+                <div key={day} className="text-xs font-medium text-gray-400 py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {daysInMonth.map((date) => {
+                const dateString = format(date, 'yyyy-MM-dd');
+                const dayData = tradeData[dateString];
+                const hasData = !!dayData;
+                const isWinning = hasData && dayData.profit > 0;
+                const isLosing = hasData && dayData.profit < 0;
+                
+                let dayClasses = "calendar-day p-2 rounded-md border border-[rgba(255,255,255,0.05)] min-h-[80px] flex flex-col relative";
+                
+                if (isToday(date)) {
+                  dayClasses += " border-[#3366FF]";
+                }
+                
+                if (isWinning) {
+                  dayClasses += " profit-day";
+                } else if (isLosing) {
+                  dayClasses += " loss-day";
+                }
+                
+                return (
+                  <div 
+                    key={dateString}
+                    className={dayClasses}
+                    onClick={() => handleDateSelect(date)}
+                  >
+                    <span className={`text-xs font-medium self-end ${isToday(date) ? 'bg-[#3366FF] text-white w-5 h-5 flex items-center justify-center rounded-full' : 'text-gray-400'}`}>
+                      {format(date, 'd')}
+                    </span>
+                    
+                    {hasData && (
+                      <div className="mt-auto">
+                        <div className={`text-sm font-semibold ${isWinning ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}>
+                          {dayData.profit > 0 ? '+' : ''}{dayData.profit.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {dayData.trades} trades
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          
-          {/* Legend Section */}
-          <div className="card p-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full bg-[#00C853] mr-2"></div>
-                <span className="text-xs text-gray-400">Profit day</span>
-              </div>
-              
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full bg-[#FF3D71] mr-2"></div>
-                <span className="text-xs text-gray-400">Loss day</span>
-              </div>
-              
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full border border-[#3366FF] mr-2"></div>
-                <span className="text-xs text-gray-400">Today</span>
-              </div>
-              
-              <div className="ml-auto">
-                <button className="text-xs text-[#3366FF]">View Detailed Report</button>
-              </div>
+        </div>
+        
+        {/* Legend Section */}
+        <div className="card p-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-[#00C853] mr-2"></div>
+              <span className="text-xs text-gray-400">Profit day</span>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-[#FF3D71] mr-2"></div>
+              <span className="text-xs text-gray-400">Loss day</span>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full border border-[#3366FF] mr-2"></div>
+              <span className="text-xs text-gray-400">Today</span>
+            </div>
+            
+            <div className="ml-auto">
+              <button className="text-xs text-[#3366FF]">View Detailed Report</button>
             </div>
           </div>
         </div>
@@ -800,52 +718,6 @@ export default function LogCalendar() {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label" htmlFor="entryPrice">Entry Price</label>
-                    <input
-                      id="entryPrice"
-                      name="entryPrice"
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      placeholder="0.00"
-                      value={tradeForm.entryPrice}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="form-label" htmlFor="exitPrice">Exit Price</label>
-                    <input
-                      id="exitPrice"
-                      name="exitPrice"
-                      type="number"
-                      step="0.01"
-                      className="form-input"
-                      placeholder="0.00"
-                      value={tradeForm.exitPrice}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="form-label" htmlFor="contracts">Contracts</label>
-                    <input
-                      id="contracts"
-                      name="contracts"
-                      type="number"
-                      className="form-input"
-                      placeholder="1"
-                      value={tradeForm.contracts}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  
                   <div>
                     <label className="form-label" htmlFor="fees">Fees</label>
                     <input
@@ -941,6 +813,5 @@ export default function LogCalendar() {
           }
         }
       `}</style>
-    </div>
-  );
-}
+    </Layout>
+  )}

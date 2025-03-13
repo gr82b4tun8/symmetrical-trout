@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Menu, X, Settings, DollarSign, Activity, Target, User, Upload } from 'lucide-react';
+import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Settings, DollarSign, Activity, Target, User, Upload } from 'lucide-react';
 import Head from 'next/head';
 import html2canvas from 'html2canvas';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
+import Layout from '../components/Layout';
 
 // Dynamically import Chart component
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
@@ -24,9 +25,6 @@ export default function Home() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [showThinking, setShowThinking] = useState(false);
-  
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Time filter state
   const [timeFilter, setTimeFilter] = useState('day');
@@ -228,20 +226,6 @@ export default function Home() {
     }
   };
 
-  // Close sidebar when clicking outside on mobile
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (sidebarOpen && window.innerWidth < 768) {
-        setSidebarOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [sidebarOpen]);
-
   const chartOptions = {
     chart: {
       type: 'candlestick',
@@ -362,497 +346,479 @@ export default function Home() {
     }]
   };
 
-  return (
-    <div className="relative min-h-screen font-sans text-white bg-[#111111]">
-      {/* CSS Gradient Background - No Three.js needed */}
-      <GradientBackground />
-      
-      <Head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-        <style>{`
-          :root {
-            --font-primary: 'Inter', sans-serif;
-            --green-color: #00C853;
-            --red-color: #FF3D71;
-            --blue-color: #3366FF;
-            --card-bg: rgba(26, 26, 31, 0.8);
-            --border-color: rgba(255, 255, 255, 0.1);
-          }
-          body {
-            font-family: var(--font-primary);
-            background-color: #111111;
-          }
-          .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-          }
-          .green-glow {
-            animation: greenPulse 2s infinite;
-          }
-          .red-glow {
-            animation: redPulse 2s infinite;
-          }
-          .btn-primary {
-            background-color: var(--blue-color);
-            transition: all 0.2s ease;
-          }
-          .btn-primary:hover {
-            background-color: #4d7aff;
-            transform: translateY(-1px);
-          }
-          
-          .tab-active {
-            background-color: #282834;
-            color: white;
-          }
-          
-          .tab {
-            transition: all 0.2s ease;
-          }
-          
-          .glow-line {
-            height: 3px;
-            background: linear-gradient(90deg, #3366FF 0%, #8A33FF 100%);
-            border-radius: 3px;
-            margin-top: 4px;
-          }
-          
-          .sidebar-item {
-            transition: all 0.2s ease;
-          }
-          
-          .sidebar-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-          }
-          
-          .sidebar-item-active {
-            background-color: rgba(51, 102, 255, 0.1);
-            border-left: 3px solid var(--blue-color);
-          }
-          
-          .portfolio-bubble {
-            background: radial-gradient(circle at 70% 70%, rgba(51, 102, 255, 0.15), rgba(0, 200, 83, 0.15));
-            border-radius: 999px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          }
-          
-          .portfolio-bubble:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-            border-color: rgba(255, 255, 255, 0.2);
-          }
-        `}</style>
-      </Head>
-      
-      {/* Mobile sidebar toggle */}
-      <button 
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="md:hidden fixed z-50 bottom-4 right-4 bg-[#3366FF] text-white p-3 rounded-full shadow-lg"
-      >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-      
-      {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full z-40 w-64 bg-[#111111]/90 backdrop-blur-xl border-r border-[rgba(255,255,255,0.1)] transform transition-all duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        <div className="flex flex-col h-full">
-          <div className="p-6">
-            <div className="flex items-center mb-8">
-              <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center">
-                <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
-              </div>
-              <span className="ml-3 text-xl font-bold text-white">
-                ScalpGPT
-              </span>
+  // Content for the Layout component
+  const content = (
+    <div className="max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-gray-400 mb-1">Hi there, welcome back!</p>
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        </div>
+        
+        <div className="flex items-center mt-4 sm:mt-0">
+          <Link href="/my-profile">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#3366FF] to-[#00C853] flex items-center justify-center cursor-pointer">
+              <User className="h-4 w-4 text-white" />
             </div>
-            
-            <div className="space-y-1">
-              <div className="sidebar-item sidebar-item-active px-4 py-3 rounded-md flex items-center">
-                <BarChart2 className="h-5 w-5 text-[#3366FF] mr-3" />
-                <span className="text-white font-medium">Analyze</span>
-              </div>
-              
-              <Link href="/external-chart" className="block">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <Upload className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">External Charts</span>
-                </div>
-              </Link>
-              
-              <Link href="/log" className="block">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <DollarSign className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Payouts</span>
-                </div>
-              </Link>
-              
-              <Link href="/my-profile" className="block">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <Target className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Goals</span>
-                </div>
-              </Link>
+          </Link>
+        </div>
+      </div>
+      
+      {/* Portfolio Stats in Bubbles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="portfolio-bubble p-6 flex items-center">
+          <div className="rounded-full p-3 bg-[rgba(51,102,255,0.15)] mr-4">
+            <DollarSign className="h-6 w-6 text-[#3366FF]" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm text-gray-300 mb-1">Portfolio Worth</h3>
+              {stats && (
+                <span 
+                  className={`text-sm font-medium ${parseFloat(stats.changePct) >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}
+                >
+                  {parseFloat(stats.changePct) >= 0 ? '+' : ''}{stats.changePct}%
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-bold text-white">
+              {loadingUserData ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                formatCurrency(getCurrentPortfolioValue())
+              )}
+            </p>
+          </div>
+        </div>
+        
+        {/* Portfolio Goal Card - Progress Bar Removed */}
+        <div className="portfolio-bubble p-6 flex items-center">
+          <div className="rounded-full p-3 bg-[rgba(0,200,83,0.15)] mr-4">
+            <Target className="h-6 w-6 text-[#00C853]" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm text-gray-300 mb-1">Portfolio Goal</h3>
+            <div className="flex flex-col">
+              <p className="text-2xl font-bold text-white">
+                {loadingUserData ? (
+                  <span className="animate-pulse">Loading...</span>
+                ) : (
+                  formatCurrency(portfolioGoal)
+                )}
+              </p>
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Portfolio Starting Value Card */}
+        <div className="card p-6">
+          <p className="text-gray-400 text-sm mb-1">Starting Portfolio</p>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold text-white">
+              {loadingUserData ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                formatCurrency(startingPortfolio)
+              )}
+            </span>
+          </div>
           
-          <div className="mt-auto p-6">
-            <button className="w-full bg-[#3366FF] text-white rounded-md py-3 flex items-center justify-center">
-              <span className="mr-2">New Analysis</span>
-              <span className="text-lg">+</span>
+          <div className="flex items-center mt-8">
+            <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-[#3366FF]" />
+            </div>
+            <p className="text-xs text-gray-400 ml-2">
+              Initial investment
+            </p>
+            <Link href="/my-profile" className="ml-auto">
+              <button className="text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors">
+                Edit
+              </button>
+            </Link>
+          </div>
+        </div>
+        
+        {/* Current Stock Card */}
+        <div className="card p-6">
+          <p className="text-gray-400 text-sm mb-1">Current Stock</p>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold text-white">${stats ? stats.currentPrice : '0.00'}</span>
+            {stats && (
+              <span 
+                className={`ml-2 text-sm font-medium ${parseFloat(stats.changePct) >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}
+              >
+                {parseFloat(stats.changePct) >= 0 ? '+' : ''}{stats.changePct}%
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center mt-8">
+            <div className="w-8 h-8 rounded-full bg-[rgba(255,61,113,0.1)] flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-[#FF3D71]" />
+            </div>
+            <p className="text-xs text-gray-400 ml-2">
+              Last updated just now
+            </p>
+            <button 
+              onClick={fetchStockData}
+              disabled={loading}
+              className="ml-auto text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors"
+            >
+              {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>
+        
+        {/* Symbol Info Card */}
+        <div className="card p-6">
+          <p className="text-gray-400 text-sm mb-1">Symbol Info</p>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold text-white">{symbol}</span>
+            <span className="ml-2 text-sm text-gray-400">NYSE</span>
+          </div>
+          
+          <div className="flex items-center mt-8">
+            <div className="w-8 h-8 rounded-full bg-[rgba(255,199,0,0.1)] flex items-center justify-center">
+              <Settings className="h-4 w-4 text-[#FFC700]" />
+            </div>
+            <p className="text-xs text-gray-400 ml-2">
+              Update your symbol settings
+            </p>
+            <div className="relative ml-auto">
+              <input
+                type="text"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                placeholder="Enter symbol"
+                className="pl-10 pr-3 py-2 text-sm bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#3366FF] w-32"
+              />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            </div>
+          </div>
+        </div>
       </div>
       
-      {/* Main content */}
-      <div className="md:ml-64 p-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-gray-400 mb-1">Hi there, welcome back!</p>
-              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="card p-5 flex items-center">
+          <div className="w-10 h-10 rounded-full bg-[rgba(255,61,113,0.1)] flex items-center justify-center mr-4">
+            <Calendar className="h-5 w-5 text-[#FF3D71]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-gray-400 text-xs">Trading date</p>
+            <div className="flex items-center justify-between">
+              <div className="relative mt-1">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="pl-3 pr-3 py-1 text-sm bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#3366FF]"
+                />
+              </div>
+              <button className="text-sm text-[#3366FF]">View All</button>
             </div>
-            
-            <div className="flex items-center mt-4 sm:mt-0">
-              <Link href="/my-profile">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#3366FF] to-[#00C853] flex items-center justify-center cursor-pointer">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-              </Link>
+          </div>
+        </div>
+        
+        <div className="card p-5 flex items-center">
+          <div className="w-10 h-10 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center mr-4">
+            <Camera className="h-5 w-5 text-[#3366FF]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-gray-400 text-xs">Market Analysis</p>
+            <div className="flex items-center justify-between">
+              <p className="text-white text-sm mt-1">Generate AI insights</p>
+              <button 
+                onClick={captureAndAnalyze}
+                disabled={analyzing || stockData.length === 0}
+                className="text-sm text-white bg-[#3366FF] px-3 py-1 rounded-md hover:bg-[#4d7aff] transition-colors disabled:opacity-50 disabled:bg-[#3366FF]"
+              >
+                {analyzing ? 'Analyzing...' : 'Analyze'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Chart Section */}
+      <div className="card overflow-hidden mb-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-white">Market Activity</h2>
+            <div className="flex space-x-2 bg-[rgba(255,255,255,0.05)] rounded-md p-1">
+              <button 
+                className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'day' ? 'tab-active' : 'tab text-gray-400'}`}
+                onClick={() => setTimeFilter('day')}
+              >
+                Day
+              </button>
+              <button 
+                className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'week' ? 'tab-active' : 'tab text-gray-400'}`}
+                onClick={() => setTimeFilter('week')}
+              >
+                Week
+              </button>
+              <button 
+                className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'month' ? 'tab-active' : 'tab text-gray-400'}`}
+                onClick={() => setTimeFilter('month')}
+              >
+                Month
+              </button>
+              <button 
+                className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'year' ? 'tab-active' : 'tab text-gray-400'}`}
+                onClick={() => setTimeFilter('year')}
+              >
+                Year
+              </button>
             </div>
           </div>
           
-          {/* Portfolio Stats in Bubbles */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="portfolio-bubble p-6 flex items-center">
-              <div className="rounded-full p-3 bg-[rgba(51,102,255,0.15)] mr-4">
-                <DollarSign className="h-6 w-6 text-[#3366FF]" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm text-gray-300 mb-1">Portfolio Worth</h3>
-                  {stats && (
-                    <span 
-                      className={`text-sm font-medium ${parseFloat(stats.changePct) >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}
-                    >
-                      {parseFloat(stats.changePct) >= 0 ? '+' : ''}{stats.changePct}%
-                    </span>
-                  )}
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {loadingUserData ? (
-                    <span className="animate-pulse">Loading...</span>
-                  ) : (
-                    formatCurrency(getCurrentPortfolioValue())
-                  )}
-                </p>
-              </div>
-            </div>
-            
-            {/* Portfolio Goal Card - Progress Bar Removed */}
-            <div className="portfolio-bubble p-6 flex items-center">
-              <div className="rounded-full p-3 bg-[rgba(0,200,83,0.15)] mr-4">
-                <Target className="h-6 w-6 text-[#00C853]" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm text-gray-300 mb-1">Portfolio Goal</h3>
-                <div className="flex flex-col">
-                  <p className="text-2xl font-bold text-white">
-                    {loadingUserData ? (
-                      <span className="animate-pulse">Loading...</span>
-                    ) : (
-                      formatCurrency(portfolioGoal)
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Portfolio Starting Value Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-sm mb-1">Starting Portfolio</p>
-              <div className="flex items-baseline">
-                <span className="text-3xl font-bold text-white">
-                  {loadingUserData ? (
-                    <span className="animate-pulse">Loading...</span>
-                  ) : (
-                    formatCurrency(startingPortfolio)
-                  )}
-                </span>
-              </div>
-              
-              <div className="flex items-center mt-8">
-                <div className="w-8 h-8 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-[#3366FF]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Initial investment
-                </p>
-                <Link href="/my-profile" className="ml-auto">
-                  <button className="text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors">
-                    Edit
-                  </button>
-                </Link>
-              </div>
-            </div>
-            
-            {/* Current Stock Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-sm mb-1">Current Stock</p>
-              <div className="flex items-baseline">
-                <span className="text-3xl font-bold text-white">${stats ? stats.currentPrice : '0.00'}</span>
-                {stats && (
-                  <span 
-                    className={`ml-2 text-sm font-medium ${parseFloat(stats.changePct) >= 0 ? 'text-[#00C853] green-glow' : 'text-[#FF3D71] red-glow'}`}
-                  >
-                    {parseFloat(stats.changePct) >= 0 ? '+' : ''}{stats.changePct}%
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center mt-8">
-                <div className="w-8 h-8 rounded-full bg-[rgba(255,61,113,0.1)] flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-[#FF3D71]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Last updated just now
-                </p>
-                <button 
-                  onClick={fetchStockData}
-                  disabled={loading}
-                  className="ml-auto text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors"
-                >
-                  {loading ? 'Loading...' : 'Refresh'}
-                </button>
-              </div>
-            </div>
-            
-            {/* Symbol Info Card */}
-            <div className="card p-6">
-              <p className="text-gray-400 text-sm mb-1">Symbol Info</p>
-              <div className="flex items-baseline">
-                <span className="text-3xl font-bold text-white">{symbol}</span>
-                <span className="ml-2 text-sm text-gray-400">NYSE</span>
-              </div>
-              
-              <div className="flex items-center mt-8">
-                <div className="w-8 h-8 rounded-full bg-[rgba(255,199,0,0.1)] flex items-center justify-center">
-                  <Settings className="h-4 w-4 text-[#FFC700]" />
-                </div>
-                <p className="text-xs text-gray-400 ml-2">
-                  Update your symbol settings
-                </p>
-                <div className="relative ml-auto">
-                  <input
-                    type="text"
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                    placeholder="Enter symbol"
-                    className="pl-10 pr-3 py-2 text-sm bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#3366FF] w-32"
-                  />
-                  <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="card p-5 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-[rgba(255,61,113,0.1)] flex items-center justify-center mr-4">
-                <Calendar className="h-5 w-5 text-[#FF3D71]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-gray-400 text-xs">Trading date</p>
-                <div className="flex items-center justify-between">
-                  <div className="relative mt-1">
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="pl-3 pr-3 py-1 text-sm bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#3366FF]"
-                    />
-                  </div>
-                  <button className="text-sm text-[#3366FF]">View All</button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-5 flex items-center">
-              <div className="w-10 h-10 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center mr-4">
-                <Camera className="h-5 w-5 text-[#3366FF]" />
-              </div>
-              <div className="flex-1">
-                <p className="text-gray-400 text-xs">Market Analysis</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-white text-sm mt-1">Generate AI insights</p>
-                  <button 
-                    onClick={captureAndAnalyze}
-                    disabled={analyzing || stockData.length === 0}
-                    className="text-sm text-white bg-[#3366FF] px-3 py-1 rounded-md hover:bg-[#4d7aff] transition-colors disabled:opacity-50 disabled:bg-[#3366FF]"
-                  >
-                    {analyzing ? 'Analyzing...' : 'Analyze'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Main Chart Section */}
-          <div className="card overflow-hidden mb-8">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-white">Market Activity</h2>
-                <div className="flex space-x-2 bg-[rgba(255,255,255,0.05)] rounded-md p-1">
-                  <button 
-                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'day' ? 'tab-active' : 'tab text-gray-400'}`}
-                    onClick={() => setTimeFilter('day')}
-                  >
-                    Day
-                  </button>
-                  <button 
-                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'week' ? 'tab-active' : 'tab text-gray-400'}`}
-                    onClick={() => setTimeFilter('week')}
-                  >
-                    Week
-                  </button>
-                  <button 
-                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'month' ? 'tab-active' : 'tab text-gray-400'}`}
-                    onClick={() => setTimeFilter('month')}
-                  >
-                    Month
-                  </button>
-                  <button 
-                    className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'year' ? 'tab-active' : 'tab text-gray-400'}`}
-                    onClick={() => setTimeFilter('year')}
-                  >
-                    Year
-                  </button>
-                </div>
-              </div>
-              
-              {error && (
-                <div className="bg-[rgba(255,61,113,0.1)] border-l-2 border-[#FF3D71] p-3 mb-4 rounded-md">
-                  <p className="text-[#FF3D71] text-sm">{error}</p>
-                </div>
-              )}
-              
-              {stockData.length > 0 ? (
-                <div ref={chartRef}>
-                  <Chart
-                    options={chartOptions}
-                    series={[{ data: stockData }]}
-                    type="candlestick"
-                    height={350}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-80 bg-[rgba(0,0,0,0.2)] rounded-md">
-                  <div className="text-center">
-                    <p className="text-gray-400 mb-4">No data available</p>
-                    <button 
-                      onClick={fetchStockData}
-                      className="px-4 py-2 bg-[#3366FF] text-white rounded-md text-sm"
-                    >
-                      Load Data
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Thinking Animation */}
-          {showThinking && (
-            <div className="card p-6 mb-8 animate-fadeIn">
-              <div className="flex flex-col items-center">
-                <div className="relative w-16 h-16 mb-4">
-                  <div className="absolute inset-0 rounded-full border-4 border-[rgba(51,102,255,0.1)] border-t-[#3366FF] animate-spin"></div>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Analyzing Market Patterns</h3>
-                
-                <div className="flex justify-center space-x-2 mt-2">
-                  <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                  <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                  <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                </div>
-                
-                <p className="text-sm text-gray-400 mt-4 max-w-md text-center">
-                  Identifying support/resistance levels, trend patterns, and volatility indicators...
-                </p>
-              </div>
+          {error && (
+            <div className="bg-[rgba(255,61,113,0.1)] border-l-2 border-[#FF3D71] p-3 mb-4 rounded-md">
+              <p className="text-[#FF3D71] text-sm">{error}</p>
             </div>
           )}
           
-          {/* Analysis Results */}
-          {analysis && (
-            <div className="card overflow-hidden mb-8 animate-fadeInUp">
-              <div className="bg-[rgba(51,102,255,0.05)] border-b border-[rgba(51,102,255,0.2)] py-4 px-6">
-                <h3 className="text-base font-semibold text-white flex items-center">
-                  <span className="h-2 w-2 bg-[#3366FF] rounded-full mr-2 animate-pulse"></span>
-                  AI Market Analysis
-                </h3>
-              </div>
-              
-              <div className="p-6">
-                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
-                  {analysis}
-                </p>
+          {stockData.length > 0 ? (
+            <div ref={chartRef}>
+              <Chart
+                options={chartOptions}
+                series={[{ data: stockData }]}
+                type="candlestick"
+                height={350}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-80 bg-[rgba(0,0,0,0.2)] rounded-md">
+              <div className="text-center">
+                <p className="text-gray-400 mb-4">No data available</p>
+                <button 
+                  onClick={fetchStockData}
+                  className="px-4 py-2 bg-[#3366FF] text-white rounded-md text-sm"
+                >
+                  Load Data
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
       
-      {/* Add global styles for animations */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes fadeInUp {
-          from { 
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes greenPulse {
-          0% { text-shadow: 0 0 5px rgba(0, 200, 83, 0.5); }
-          50% { text-shadow: 0 0 10px rgba(0, 200, 83, 0.8), 0 0 15px rgba(0, 200, 83, 0.5); }
-          100% { text-shadow: 0 0 5px rgba(0, 200, 83, 0.5); }
-        }
-        
-        @keyframes redPulse {
-          0% { text-shadow: 0 0 5px rgba(255, 61, 113, 0.5); }
-          50% { text-shadow: 0 0 10px rgba(255, 61, 113, 0.8), 0 0 15px rgba(255, 61, 113, 0.5); }
-          100% { text-shadow: 0 0 5px rgba(255, 61, 113, 0.5); }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-        
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
-        }
-      `}</style>
+      {/* Thinking Animation */}
+      {showThinking && (
+        <div className="card p-6 mb-8 animate-fadeIn">
+          <div className="flex flex-col items-center">
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-[rgba(51,102,255,0.1)] border-t-[#3366FF] animate-spin"></div>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Analyzing Market Patterns</h3>
+            
+            <div className="flex justify-center space-x-2 mt-2">
+              <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="h-2 w-2 bg-[#3366FF] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+            
+            <p className="text-sm text-gray-400 mt-4 max-w-md text-center">
+              Identifying support/resistance levels, trend patterns, and volatility indicators...
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Analysis Results */}
+      {analysis && (
+        <div className="card overflow-hidden mb-8 animate-fadeInUp">
+          <div className="bg-[rgba(51,102,255,0.05)] border-b border-[rgba(51,102,255,0.2)] py-4 px-6">
+            <h3 className="text-base font-semibold text-white flex items-center">
+              <span className="h-2 w-2 bg-[#3366FF] rounded-full mr-2 animate-pulse"></span>
+              AI Market Analysis
+            </h3>
+          </div>
+          
+          <div className="p-6">
+            <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+              {analysis}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
+  );
+
+  return (
+    <>
+      <div className="relative min-h-screen font-sans text-white bg-[#111111]">
+        {/* CSS Gradient Background - No Three.js needed */}
+        <GradientBackground />
+        
+        <Head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        </Head>
+        
+        {/* Use the Layout component */}
+        <Layout>
+          {content}
+        </Layout>
+      </div>
+
+      {/* Separated styles to another component */}
+      <GlobalStyles />
+    </>
+  );
+}
+
+// Extracted all styles to a separate component to avoid any issues
+function GlobalStyles() {
+  return (
+    <style jsx global>{`
+      :root {
+        --font-primary: 'Inter', sans-serif;
+        --green-color: #00C853;
+        --red-color: #FF3D71;
+        --blue-color: #3366FF;
+        --card-bg: rgba(26, 26, 31, 0.8);
+        --border-color: rgba(255, 255, 255, 0.1);
+      }
+      
+      body {
+        font-family: var(--font-primary);
+        background-color: #111111;
+      }
+      
+      .card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+      }
+      
+      .green-glow {
+        animation: greenPulse 2s infinite;
+      }
+      
+      .red-glow {
+        animation: redPulse 2s infinite;
+      }
+      
+      .btn-primary {
+        background-color: var(--blue-color);
+        transition: all 0.2s ease;
+      }
+      
+      .btn-primary:hover {
+        background-color: #4d7aff;
+        transform: translateY(-1px);
+      }
+      
+      .tab-active {
+        background-color: #282834;
+        color: white;
+      }
+      
+      .tab {
+        transition: all 0.2s ease;
+      }
+      
+      .glow-line {
+        height: 3px;
+        background: linear-gradient(90deg, #3366FF 0%, #8A33FF 100%);
+        border-radius: 3px;
+        margin-top: 4px;
+      }
+      
+      .portfolio-bubble {
+        background: radial-gradient(circle at 70% 70%, rgba(51, 102, 255, 0.15), rgba(0, 200, 83, 0.15));
+        border-radius: 999px;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      
+      .portfolio-bubble:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes fadeInUp {
+        from { 
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes greenPulse {
+        0% { text-shadow: 0 0 0 rgba(0, 200, 83, 0); }
+        50% { text-shadow: 0 0 10px rgba(0, 200, 83, 0.5); }
+        100% { text-shadow: 0 0 0 rgba(0, 200, 83, 0); }
+      }
+      
+      @keyframes redPulse {
+        0% { text-shadow: 0 0 0 rgba(255, 61, 113, 0); }
+        50% { text-shadow: 0 0 10px rgba(255, 61, 113, 0.5); }
+        100% { text-shadow: 0 0 0 rgba(255, 61, 113, 0); }
+      }
+      
+      .animate-fadeIn {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      
+      .animate-fadeInUp {
+        animation: fadeInUp 0.5s ease-in-out;
+      }
+      
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      .animate-bounce {
+        animation: bounce 1s infinite;
+      }
+      
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+      
+      .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+    `}</style>
   );
 }

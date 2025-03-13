@@ -122,8 +122,10 @@ const AnimatedStockChart = () => {
 export default function Home() {
   return (
     <div className="relative min-h-screen font-sans text-white bg-[#111111]">
-      {/* Gradient Background */}
-      <GradientBackground />
+      {/* Gradient Background with fixed positioning to ensure visibility */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <GradientBackground />
+      </div>
       
       <Head>
         <title>ScalpGPT - AI-Powered Trading Analysis</title>
@@ -185,7 +187,8 @@ export default function Home() {
         `}</style>
       </Head>
       
-      <div className="max-w-6xl mx-auto px-6 py-12 md:py-20">
+      {/* Content with higher z-index to appear above gradient */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-20">
         {/* Header/Nav */}
         <header className="flex justify-between items-center mb-16">
           <div className="flex items-center">

@@ -3,10 +3,11 @@ import { useState, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
-  Upload, ArrowLeft, BarChart2, DollarSign, Calendar, 
-  ChevronUp, ChevronDown, AlertTriangle, Check, X, RefreshCw
+  Upload, ArrowLeft, BarChart2, AlertTriangle, Check, X, RefreshCw
 } from 'lucide-react';
 import GradientBackground from '../components/GradientBackground';
+// Import the Layout component
+import Layout from '../components/Layout';
 
 export default function ExternalChartAnalysis() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -153,7 +154,7 @@ export default function ExternalChartAnalysis() {
   const parsedData = parseAnalysis(analysisResult);
   
   return (
-    <div className="relative min-h-screen font-sans text-white bg-[#111111]">
+    <Layout>
       {/* Gradient Background */}
       <GradientBackground />
       
@@ -281,260 +282,247 @@ export default function ExternalChartAnalysis() {
         `}</style>
       </Head>
       
-      {/* Mobile sidebar toggle */}
-      <div className="md:hidden fixed z-50 bottom-4 right-4 bg-[#3366FF] text-white p-3 rounded-full shadow-lg">
-        <BarChart2 size={20} />
-      </div>
-      
-      {/* Sidebar */}
-      <div className="fixed top-0 left-0 h-full z-40 w-64 bg-[#111111]/90 backdrop-blur-xl border-r border-[rgba(255,255,255,0.1)] transform hidden md:block">
-        <div className="flex flex-col h-full">
-          <div className="p-6">
-            <div className="flex items-center mb-8">
-              <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center">
-                <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
-              </div>
-              <span className="ml-3 text-xl font-bold text-white">
-                ScalpGPT
-              </span>
-            </div>
-            
-            <div className="space-y-1">
-              <Link href="/trading">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <BarChart2 className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Analyze</span>
-                </div>
-              </Link>
-              
-              <Link href="/log">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <DollarSign className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Payouts</span>
-                </div>
-              </Link>
-              
-              <div className="sidebar-item sidebar-item-active px-4 py-3 rounded-md flex items-center">
-                <Upload className="h-5 w-5 text-[#3366FF] mr-3" />
-                <span className="text-white font-medium">External Charts</span>
-              </div>
-              
-              <Link href="/planning">
-                <div className="sidebar-item px-4 py-3 rounded-md flex items-center">
-                  <Calendar className="h-5 w-5 text-gray-400 mr-3" />
-                  <span className="text-gray-400">Planning</span>
-                </div>
-              </Link>
-            </div>
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Link href="/trading" className="text-gray-400 mb-1 flex items-center hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              <span>Back to Dashboard</span>
+            </Link>
+            <h1 className="text-2xl font-bold text-white mt-2">External Chart Analysis</h1>
+            <p className="text-gray-400 mt-1">Upload your own chart images for AI-powered trading insights</p>
           </div>
         </div>
-      </div>
-      
-      {/* Main content */}
-      <div className="md:ml-64 p-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        
+        {/* Upload Area */}
+        <div className="card p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <Link href="/trading" className="text-gray-400 mb-1 flex items-center hover:text-white transition-colors">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                <span>Back to Dashboard</span>
-              </Link>
-              <h1 className="text-2xl font-bold text-white mt-2">External Chart Analysis</h1>
-              <p className="text-gray-400 mt-1">Upload your own chart images for AI-powered trading insights</p>
+              <label className="block text-sm text-gray-400 mb-2">Stock Symbol</label>
+              <input
+                type="text"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                className="form-input w-full"
+                placeholder="e.g. AAPL"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Chart Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="form-input w-full"
+              />
             </div>
           </div>
           
-          {/* Upload Area */}
-          <div className="card p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Stock Symbol</label>
-                <input
-                  type="text"
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                  className="form-input w-full"
-                  placeholder="e.g. AAPL"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Chart Date</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="form-input w-full"
-                />
-              </div>
-            </div>
+          <div 
+            className="drop-zone p-8 flex flex-col items-center justify-center cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
             
-            <div 
-              className="drop-zone p-8 flex flex-col items-center justify-center cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
+            {!previewUrl ? (
+              <>
+                <div className="w-16 h-16 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center mb-4">
+                  <Upload className="h-8 w-8 text-[#3366FF]" />
+                </div>
+                <h2 className="text-lg font-medium mb-2">Drag & Drop or Click to Upload</h2>
+                <p className="text-gray-400 text-sm text-center max-w-md">
+                  Upload external chart images to analyze patterns and get trading recommendations
+                </p>
+              </>
+            ) : (
+              <div className="w-full">
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearImage();
+                    }}
+                    className="p-2 rounded-full hover:bg-[rgba(255,255,255,0.1)]"
+                  >
+                    <X className="h-5 w-5 text-gray-400" />
+                  </button>
+                </div>
+                <div className="relative rounded-lg overflow-hidden max-h-80 flex justify-center">
+                  <img 
+                    src={previewUrl} 
+                    alt="Chart preview" 
+                    className="object-contain max-h-80"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {error && (
+            <div className="mt-4 p-3 bg-[rgba(255,61,113,0.1)] border border-[rgba(255,61,113,0.3)] rounded-md flex items-start">
+              <AlertTriangle className="h-5 w-5 text-[#FF3D71] mr-2 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[#FF3D71]">{error}</p>
+            </div>
+          )}
+          
+          <div className="mt-6 flex items-center justify-center">
+            <button
+              onClick={analyzeChart}
+              disabled={!selectedImage || isAnalyzing || !symbol.trim()}
+              className={`btn-primary rounded-md py-3 px-6 text-white flex items-center ${!selectedImage || isAnalyzing || !symbol.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
-              
-              {!previewUrl ? (
+              {isAnalyzing ? (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-[rgba(51,102,255,0.1)] flex items-center justify-center mb-4">
-                    <Upload className="h-8 w-8 text-[#3366FF]" />
-                  </div>
-                  <h2 className="text-lg font-medium mb-2">Drag & Drop or Click to Upload</h2>
-                  <p className="text-gray-400 text-sm text-center max-w-md">
-                    Upload external chart images to analyze patterns and get trading recommendations
-                  </p>
+                  <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                  Analyzing...
                 </>
               ) : (
-                <div className="w-full">
-                  <div className="flex justify-end mb-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearImage();
-                      }}
-                      className="p-2 rounded-full hover:bg-[rgba(255,255,255,0.1)]"
-                    >
-                      <X className="h-5 w-5 text-gray-400" />
-                    </button>
+                <>
+                  <BarChart2 className="h-5 w-5 mr-2" />
+                  Analyze Chart
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        
+        {/* Analysis Results */}
+        {isAnalyzing && (
+          <div className="card p-8 flex flex-col items-center justify-center mb-8">
+            <div className="thinking-blob mb-6"></div>
+            <h3 className="text-lg font-medium mb-2">AI is analyzing your chart...</h3>
+            <p className="text-gray-400 text-sm max-w-md text-center">
+              Our AI is identifying patterns, support/resistance levels, and generating trading recommendations
+            </p>
+          </div>
+        )}
+        
+        {analysisResult && !isAnalyzing && (
+          <div className="space-y-6 mb-8 animate-fadeInUp">
+            <h2 className="text-xl font-semibold">Analysis Results</h2>
+            
+            {/* Direction and Strike Prices */}
+            <div className="card p-6 analysis-card">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">AI Trading Recommendation</h3>
+                {parsedData.direction && (
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    parsedData.direction.toLowerCase() === 'long' 
+                      ? 'bg-[rgba(0,200,83,0.1)] text-[#00C853]' 
+                      : 'bg-[rgba(255,61,113,0.1)] text-[#FF3D71]'
+                  }`}>
+                    {parsedData.direction.toUpperCase()}
                   </div>
-                  <div className="relative rounded-lg overflow-hidden max-h-80 flex justify-center">
-                    <img 
-                      src={previewUrl} 
-                      alt="Chart preview" 
-                      className="object-contain max-h-80"
-                    />
+                )}
+              </div>
+              
+              {parsedData.strikePrices.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm text-gray-400 mb-2">Key Price Targets</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {parsedData.strikePrices.map((price, index) => (
+                      <div key={index} className="tag">
+                        {price}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {parsedData.percentages.length > 0 && (
+                <div>
+                  <h4 className="text-sm text-gray-400 mb-2">Probability/Targets</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {parsedData.percentages.map((percentage, index) => (
+                      <div key={index} className="tag">
+                        {percentage}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
             
-            {error && (
-              <div className="mt-4 p-3 bg-[rgba(255,61,113,0.1)] border border-[rgba(255,61,113,0.3)] rounded-md flex items-start">
-                <AlertTriangle className="h-5 w-5 text-[#FF3D71] mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-[#FF3D71]">{error}</p>
+            {/* Full Analysis */}
+            <div className="card p-6 analysis-card">
+              <h3 className="text-lg font-medium mb-4">Detailed Analysis</h3>
+              <div className="prose prose-invert max-w-none">
+                {analysisResult.split('\n\n').map((paragraph, idx) => (
+                  <p key={idx} className="text-gray-300 mb-4 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
               </div>
-            )}
+            </div>
             
-            <div className="mt-6 flex items-center justify-center">
-              <button
-                onClick={analyzeChart}
-                disabled={!selectedImage || isAnalyzing || !symbol.trim()}
-                className={`btn-primary rounded-md py-3 px-6 text-white flex items-center ${!selectedImage || isAnalyzing || !symbol.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-4 justify-center">
+              <button 
+                onClick={() => window.print()}
+                className="btn-primary rounded-md py-3 px-6 text-white flex items-center"
               >
-                {isAnalyzing ? (
-                  <>
-                    <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <BarChart2 className="h-5 w-5 mr-2" />
-                    Analyze Chart
-                  </>
-                )}
+                <Check className="h-5 w-5 mr-2" />
+                Save Analysis
+              </button>
+              <button 
+                onClick={clearImage}
+                className="btn-outline rounded-md py-3 px-6 text-white flex items-center"
+              >
+                <RefreshCw className="h-5 w-5 mr-2" />
+                New Analysis
               </button>
             </div>
           </div>
-          
-          {/* Analysis Results */}
-          {isAnalyzing && (
-            <div className="card p-8 flex flex-col items-center justify-center mb-8">
-              <div className="thinking-blob mb-6"></div>
-              <h3 className="text-lg font-medium mb-2">AI is analyzing your chart...</h3>
-              <p className="text-gray-400 text-sm max-w-md text-center">
-                Our AI is identifying patterns, support/resistance levels, and generating trading recommendations
-              </p>
-            </div>
-          )}
-          
-          {analysisResult && !isAnalyzing && (
-            <div className="space-y-6 mb-8">
-              <h2 className="text-xl font-semibold">Analysis Results</h2>
-              
-              {/* Direction and Strike Prices */}
-              <div className="card p-6 analysis-card">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium">AI Trading Recommendation</h3>
-                  {parsedData.direction && (
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      parsedData.direction.toLowerCase() === 'long' 
-                        ? 'bg-[rgba(0,200,83,0.1)] text-[#00C853]' 
-                        : 'bg-[rgba(255,61,113,0.1)] text-[#FF3D71]'
-                    }`}>
-                      {parsedData.direction.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                
-                {parsedData.strikePrices.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm text-gray-400 mb-2">Key Price Targets</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {parsedData.strikePrices.map((price, index) => (
-                        <div key={index} className="tag">
-                          {price}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {parsedData.percentages.length > 0 && (
-                  <div>
-                    <h4 className="text-sm text-gray-400 mb-2">Probability/Targets</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {parsedData.percentages.map((percentage, index) => (
-                        <div key={index} className="tag">
-                          {percentage}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Full Analysis */}
-              <div className="card p-6 analysis-card">
-                <h3 className="text-lg font-medium mb-4">Detailed Analysis</h3>
-                <div className="prose prose-invert max-w-none">
-                  {analysisResult.split('\n\n').map((paragraph, idx) => (
-                    <p key={idx} className="text-gray-300 mb-4 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 justify-center">
-                <button 
-                  onClick={() => window.print()}
-                  className="btn-primary rounded-md py-3 px-6 text-white flex items-center"
-                >
-                  <Check className="h-5 w-5 mr-2" />
-                  Save Analysis
-                </button>
-                <button 
-                  onClick={clearImage}
-                  className="btn-outline rounded-md py-3 px-6 text-white flex items-center"
-                >
-                  <RefreshCw className="h-5 w-5 mr-2" />
-                  New Analysis
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+      
+      {/* Add global styles for animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes fadeInUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes greenPulse {
+          0% { text-shadow: 0 0 5px rgba(0, 200, 83, 0.5); }
+          50% { text-shadow: 0 0 10px rgba(0, 200, 83, 0.8), 0 0 15px rgba(0, 200, 83, 0.5); }
+          100% { text-shadow: 0 0 5px rgba(0, 200, 83, 0.5); }
+        }
+        
+        @keyframes redPulse {
+          0% { text-shadow: 0 0 5px rgba(255, 61, 113, 0.5); }
+          50% { text-shadow: 0 0 10px rgba(255, 61, 113, 0.8), 0 0 15px rgba(255, 61, 113, 0.5); }
+          100% { text-shadow: 0 0 5px rgba(255, 61, 113, 0.5); }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+      `}</style>
+    </Layout>
   );
 }
