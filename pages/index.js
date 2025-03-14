@@ -6,118 +6,10 @@ import { BarChart2, TrendingUp, User, ChevronRight, LogIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import GradientBackground from '../components/GradientBackground';
 
-// Animate stock chart on homepage
-const AnimatedStockChart = () => {
-  const [chartData, setChartData] = useState([]);
-  
-  useEffect(() => {
-    // Generate random increasing trend data for animation
-    const generateData = () => {
-      const volatility = 5;
-      const dataPoints = 20;
-      const result = [];
-      let lastValue = 100;
-      
-      for (let i = 0; i < dataPoints; i++) {
-        // Ensure overall upward trend with some volatility
-        const change = (Math.random() * volatility) - (volatility / 3);
-        lastValue = lastValue + change;
-        result.push({ x: i, y: lastValue });
-      }
-      
-      return result;
-    };
-    
-    setChartData(generateData());
-    
-    // Animate chart by updating data periodically
-    const interval = setInterval(() => {
-      const newData = [...chartData];
-      
-      if (newData.length > 0) {
-        // Shift all values left
-        for (let i = 0; i < newData.length - 1; i++) {
-          newData[i].y = newData[i + 1].y;
-        }
-        
-        // Add new value at the end with slight upward bias
-        const lastValue = newData[newData.length - 1].y;
-        const change = (Math.random() * 5) - 1.5;
-        newData[newData.length - 1].y = lastValue + change;
-      }
-      
-      setChartData([...newData]);
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Draw the SVG chart path
-  const getPath = () => {
-    if (chartData.length === 0) return '';
-    
-    const height = 200;
-    const width = 600;
-    const maxValue = Math.max(...chartData.map(d => d.y));
-    const minValue = Math.min(...chartData.map(d => d.y));
-    const range = maxValue - minValue;
-    
-    const scaleY = (value) => height - ((value - minValue) / range) * height;
-    const scaleX = (index) => (index / (chartData.length - 1)) * width;
-    
-    let path = `M${scaleX(0)},${scaleY(chartData[0].y)}`;
-    
-    for (let i = 1; i < chartData.length; i++) {
-      path += ` L${scaleX(i)},${scaleY(chartData[i].y)}`;
-    }
-    
-    return path;
-  };
-
-  return (
-    <div className="w-full h-64 md:h-80 relative overflow-hidden">
-      <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none">
-        {/* Line chart */}
-        <path
-          d={getPath()}
-          fill="none"
-          stroke="#3366FF"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {/* Gradient area under the line */}
-        <linearGradient id="gradientArea" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#3366FF" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#3366FF" stopOpacity="0" />
-        </linearGradient>
-        <path
-          d={`${getPath()} L${chartData.length > 0 ? 600 : 0},200 L0,200 Z`}
-          fill="url(#gradientArea)"
-        />
-        
-        {/* Animated pulse dot at the end of the line */}
-        {chartData.length > 0 && (
-          <circle
-            cx={600}
-            cy={chartData.length > 0 ? scaleY(chartData[chartData.length - 1].y) : 0}
-            r="4"
-            fill="#3366FF"
-            className="animate-pulse"
-          />
-        )}
-      </svg>
-    </div>
-  );
-
-  function scaleY(value) {
-    const height = 200;
-    const maxValue = Math.max(...chartData.map(d => d.y));
-    const minValue = Math.min(...chartData.map(d => d.y));
-    const range = maxValue - minValue;
-    return height - ((value - minValue) / range) * height;
-  }
-};
+// Dynamically import the chart component with no SSR to avoid hydration issues
+const AnimatedStockChart = dynamic(() => import('../components/AnimatedStockChart'), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
@@ -183,6 +75,20 @@ export default function Home() {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
+          }
+          /* Add new animation for the pulse effect */
+          @keyframes ping {
+            0% {
+              transform: scale(1);
+              opacity: 1;
+            }
+            75%, 100% {
+              transform: scale(2);
+              opacity: 0;
+            }
+          }
+          .animate-ping {
+            animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
           }
         `}</style>
       </Head>
