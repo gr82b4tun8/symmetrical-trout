@@ -3,7 +3,8 @@ import { useState, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
-  Upload, ArrowLeft, BarChart2, AlertTriangle, Check, X, RefreshCw
+  Upload, ArrowLeft, BarChart2, AlertTriangle, Check, X, RefreshCw,
+  ArrowUp, ArrowDown, Target, DollarSign, LogOut, HelpCircle
 } from 'lucide-react';
 import GradientBackground from '../components/GradientBackground';
 // Import the Layout component
@@ -131,27 +132,88 @@ export default function ExternalChartAnalysis() {
     }
   };
   
-  // Parse the analysis to extract key information
-  const parseAnalysis = (analysis) => {
+  // Parse the analysis to extract structured sections with concise recommendations
+  const parseStructuredAnalysis = (analysis) => {
     if (!analysis) return {};
     
-    // Extract direction (long/short)
-    const direction = analysis.match(/\b(long|short)\b/i)?.[0] || '';
-    
-    // Extract strike prices
-    const strikePrices = analysis.match(/\$\d+(\.\d+)?/g) || [];
-    
-    // Extract percentage/probability mentions
-    const percentages = analysis.match(/\d+(\.\d+)?%/g) || [];
-    
-    return {
-      direction,
-      strikePrices,
-      percentages
+    const sections = {
+      optionType: null,
+      strikePrice: null,
+      entryPrice: null,
+      exitStrategy: null,
+      rationale: null
     };
+    
+    // Extract each section using regex patterns
+    const optionTypeMatch = analysis.match(/OPTION TYPE:([^\n]*(?:\n(?!STRIKE PRICE:|ENTRY PRICE:|EXIT STRATEGY:|RATIONALE:)[^\n]*)*)/i);
+    if (optionTypeMatch) {
+      // Extract just the option type (CALL or PUT)
+      const optionText = optionTypeMatch[1].trim();
+      if (optionText.toLowerCase().includes('call')) {
+        sections.optionType = 'CALL';
+      } else if (optionText.toLowerCase().includes('put')) {
+        sections.optionType = 'PUT';
+      } else {
+        sections.optionType = optionText.split('.')[0].trim(); // Take just the first sentence
+      }
+    }
+    
+    const strikePriceMatch = analysis.match(/STRIKE PRICE:([^\n]*(?:\n(?!OPTION TYPE:|ENTRY PRICE:|EXIT STRATEGY:|RATIONALE:)[^\n]*)*)/i);
+    if (strikePriceMatch) {
+      // Extract just the strike price (likely a dollar amount)
+      const strikeText = strikePriceMatch[1].trim();
+      const priceMatch = strikeText.match(/\$\d+(\.\d+)?/);
+      sections.strikePrice = priceMatch ? priceMatch[0] : strikeText.split('.')[0].trim();
+    }
+    
+    const entryPriceMatch = analysis.match(/ENTRY PRICE:([^\n]*(?:\n(?!OPTION TYPE:|STRIKE PRICE:|EXIT STRATEGY:|RATIONALE:)[^\n]*)*)/i);
+    if (entryPriceMatch) {
+      // Extract just the entry price recommendation
+      const entryText = entryPriceMatch[1].trim();
+      const priceMatch = entryText.match(/\$\d+(\.\d+)?(\s*-\s*\$\d+(\.\d+)?)?/); // Handles price ranges too
+      sections.entryPrice = priceMatch ? priceMatch[0] : entryText.split('.')[0].trim();
+    }
+    
+    const exitStrategyMatch = analysis.match(/EXIT STRATEGY:([^\n]*(?:\n(?!OPTION TYPE:|STRIKE PRICE:|ENTRY PRICE:|RATIONALE:)[^\n]*)*)/i);
+    if (exitStrategyMatch) {
+      // For exit strategy, keep it concise but include profit target and stop loss
+      const exitText = exitStrategyMatch[1].trim();
+      // Try to extract just the precise targets
+      const profitMatch = exitText.match(/profit target:?\s*\$\d+(\.\d+)?/i);
+      const stopMatch = exitText.match(/stop loss:?\s*\$\d+(\.\d+)?/i);
+      
+      if (profitMatch && stopMatch) {
+        sections.exitStrategy = `${profitMatch[0]}; ${stopMatch[0]}`;
+      } else {
+        // Just take the first sentence if we can't find specific targets
+        sections.exitStrategy = exitText.split('.')[0].trim() + '.';
+      }
+    }
+    
+    const rationaleMatch = analysis.match(/RATIONALE:([^\n]*(?:\n(?!OPTION TYPE:|STRIKE PRICE:|ENTRY PRICE:|EXIT STRATEGY:)[^\n]*)*)/i);
+    if (rationaleMatch) {
+      // Keep rationale concise - just the first sentence
+      const rationaleText = rationaleMatch[1].trim();
+      const firstSentence = rationaleText.split('.')[0].trim() + '.';
+      sections.rationale = firstSentence;
+    }
+    
+    return sections;
   };
   
-  const parsedData = parseAnalysis(analysisResult);
+  // Determine if the option type is call or put
+  const getOptionTypeDetails = (optionType) => {
+    if (!optionType) return { isCall: false, isPut: false };
+    
+    const lowerCaseText = optionType.toLowerCase();
+    const isCall = lowerCaseText.includes('call');
+    const isPut = lowerCaseText.includes('put');
+    
+    return { isCall, isPut };
+  };
+  
+  const parsedSections = parseStructuredAnalysis(analysisResult);
+  const optionTypeDetails = getOptionTypeDetails(parsedSections.optionType);
   
   return (
     <Layout>
@@ -278,6 +340,42 @@ export default function ExternalChartAnalysis() {
           .form-input:focus {
             border-color: var(--blue-color);
             outline: none;
+          }
+          .section-card {
+            border-left: 4px solid var(--blue-color);
+            background: rgba(51, 102, 255, 0.05);
+            margin-bottom: 16px;
+          }
+          .section-card.call {
+            border-left-color: var(--green-color);
+            background: rgba(0, 200, 83, 0.05);
+          }
+          .section-card.put {
+            border-left-color: var(--red-color);
+            background: rgba(255, 61, 113, 0.05);
+          }
+          .section-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(51, 102, 255, 0.1);
+            flex-shrink: 0;
+          }
+          .section-icon.call {
+            background: rgba(0, 200, 83, 0.1);
+          }
+          .section-icon.put {
+            background: rgba(255, 61, 113, 0.1);
+          }
+          .section-title {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.7);
           }
         `}</style>
       </Head>
@@ -410,58 +508,88 @@ export default function ExternalChartAnalysis() {
           <div className="space-y-6 mb-8 animate-fadeInUp">
             <h2 className="text-xl font-semibold">Analysis Results</h2>
             
-            {/* Direction and Strike Prices */}
-            <div className="card p-6 analysis-card">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">AI Trading Recommendation</h3>
-                {parsedData.direction && (
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    parsedData.direction.toLowerCase() === 'long' 
-                      ? 'bg-[rgba(0,200,83,0.1)] text-[#00C853]' 
-                      : 'bg-[rgba(255,61,113,0.1)] text-[#FF3D71]'
-                  }`}>
-                    {parsedData.direction.toUpperCase()}
-                  </div>
-                )}
-              </div>
-              
-              {parsedData.strikePrices.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm text-gray-400 mb-2">Key Price Targets</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {parsedData.strikePrices.map((price, index) => (
-                      <div key={index} className="tag">
-                        {price}
-                      </div>
-                    ))}
+            {/* Structured sections display */}
+            <div className="card p-6">
+              {/* Option Type Section */}
+              {parsedSections.optionType && (
+                <div className={`section-card p-4 rounded-md ${optionTypeDetails.isCall ? 'call' : optionTypeDetails.isPut ? 'put' : ''}`}>
+                  <div className="flex items-start">
+                    <div className={`section-icon mr-4 ${optionTypeDetails.isCall ? 'call' : optionTypeDetails.isPut ? 'put' : ''}`}>
+                      {optionTypeDetails.isCall ? (
+                        <ArrowUp className="h-5 w-5 text-[#00C853]" />
+                      ) : optionTypeDetails.isPut ? (
+                        <ArrowDown className="h-5 w-5 text-[#FF3D71]" />
+                      ) : (
+                        <BarChart2 className="h-5 w-5 text-[#3366FF]" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="section-title mb-1">Option Type</div>
+                      <div className="text-white">{parsedSections.optionType}</div>
+                    </div>
                   </div>
                 </div>
               )}
               
-              {parsedData.percentages.length > 0 && (
-                <div>
-                  <h4 className="text-sm text-gray-400 mb-2">Probability/Targets</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {parsedData.percentages.map((percentage, index) => (
-                      <div key={index} className="tag">
-                        {percentage}
-                      </div>
-                    ))}
+              {/* Strike Price Section */}
+              {parsedSections.strikePrice && (
+                <div className="section-card p-4 rounded-md">
+                  <div className="flex items-start">
+                    <div className="section-icon mr-4">
+                      <Target className="h-5 w-5 text-[#3366FF]" />
+                    </div>
+                    <div>
+                      <div className="section-title mb-1">Strike Price</div>
+                      <div className="text-white">{parsedSections.strikePrice}</div>
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
-            
-            {/* Full Analysis */}
-            <div className="card p-6 analysis-card">
-              <h3 className="text-lg font-medium mb-4">Detailed Analysis</h3>
-              <div className="prose prose-invert max-w-none">
-                {analysisResult.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx} className="text-gray-300 mb-4 leading-relaxed">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
+              
+              {/* Entry Price Section */}
+              {parsedSections.entryPrice && (
+                <div className="section-card p-4 rounded-md">
+                  <div className="flex items-start">
+                    <div className="section-icon mr-4">
+                      <DollarSign className="h-5 w-5 text-[#3366FF]" />
+                    </div>
+                    <div>
+                      <div className="section-title mb-1">Entry Price</div>
+                      <div className="text-white">{parsedSections.entryPrice}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Exit Strategy Section */}
+              {parsedSections.exitStrategy && (
+                <div className="section-card p-4 rounded-md">
+                  <div className="flex items-start">
+                    <div className="section-icon mr-4">
+                      <LogOut className="h-5 w-5 text-[#3366FF]" />
+                    </div>
+                    <div>
+                      <div className="section-title mb-1">Exit Strategy</div>
+                      <div className="text-white">{parsedSections.exitStrategy}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Rationale Section */}
+              {parsedSections.rationale && (
+                <div className="section-card p-4 rounded-md">
+                  <div className="flex items-start">
+                    <div className="section-icon mr-4">
+                      <HelpCircle className="h-5 w-5 text-[#3366FF]" />
+                    </div>
+                    <div>
+                      <div className="section-title mb-1">Rationale</div>
+                      <div className="text-white">{parsedSections.rationale}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Action Buttons */}

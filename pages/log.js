@@ -53,7 +53,8 @@ export default function LogCalendar() {
     entryPrice: '',
     exitPrice: '',
     contracts: '',
-    fees: ''
+    fees: '',
+    notes: ''
   });
   
   const [timeFilter, setTimeFilter] = useState('month');
@@ -164,7 +165,8 @@ export default function LogCalendar() {
       entryPrice: '',
       exitPrice: '',
       contracts: '',
-      fees: ''
+      fees: '',
+      notes: ''
     });
   };
 
@@ -212,7 +214,8 @@ export default function LogCalendar() {
             exit_price: parseFloat(tradeForm.exitPrice),
             contracts: parseInt(tradeForm.contracts),
             fees: parseFloat(tradeForm.fees),
-            profit: profit
+            profit: profit,
+            notes: tradeForm.notes || null
           }
         ]);
 
@@ -719,6 +722,50 @@ export default function LogCalendar() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <label className="form-label" htmlFor="entryPrice">Entry Price</label>
+                    <input
+                      id="entryPrice"
+                      name="entryPrice"
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={tradeForm.entryPrice}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="exitPrice">Exit Price</label>
+                    <input
+                      id="exitPrice"
+                      name="exitPrice"
+                      type="number"
+                      step="0.01"
+                      className="form-input"
+                      placeholder="0.00"
+                      value={tradeForm.exitPrice}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label" htmlFor="contracts">Contracts</label>
+                    <input
+                      id="contracts"
+                      name="contracts"
+                      type="number"
+                      className="form-input"
+                      placeholder="1"
+                      value={tradeForm.contracts}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
                     <label className="form-label" htmlFor="fees">Fees</label>
                     <input
                       id="fees"
@@ -732,6 +779,18 @@ export default function LogCalendar() {
                       required
                     />
                   </div>
+                </div>
+                
+                <div>
+                  <label className="form-label" htmlFor="notes">Notes</label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    className="form-input min-h-[80px]"
+                    placeholder="Add any trade notes here..."
+                    value={tradeForm.notes || ''}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 
                 <div className="pt-4">
@@ -814,4 +873,5 @@ export default function LogCalendar() {
         }
       `}</style>
     </Layout>
-  )}
+  );
+}

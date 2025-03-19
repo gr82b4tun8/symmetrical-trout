@@ -17,6 +17,7 @@
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.49.1",
     "apexcharts": "^4.5.0",
+    "axios": "^1.8.3",
     "date-fns": "^4.1.0",
     "glsl-noise": "^0.0.0",
     "html2canvas": "^1.4.1",

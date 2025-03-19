@@ -20,7 +20,7 @@ export default function Home() {
       </div>
       
       <Head>
-        <title>ScalpGPT - AI-Powered Trading Analysis</title>
+        <title>SoothSayer - AI-Powered Trading Analysis</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -98,10 +98,10 @@ export default function Home() {
         {/* Header/Nav */}
         <header className="flex justify-between items-center mb-16">
           <div className="flex items-center">
-            <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center mr-3">
-              <div className="h-3 w-3 bg-blue-500 rounded-full"></div>
+            <div className="h-10 w-10 flex items-center justify-center mr-3">
+              <img src="/logo2.png" alt="SoothSayer Logo" className="h-10 w-10 rounded-full object-cover" />
             </div>
-            <span className="text-xl font-bold text-white">ScalpGPT</span>
+            <span className="text-xl font-bold text-white">SoothSayer</span>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -159,7 +159,7 @@ export default function Home() {
         
         {/* Features Section */}
         <div className="mb-24">
-          <h2 className="text-2xl font-bold mb-12 text-center">Why Choose ScalpGPT</h2>
+          <h2 className="text-2xl font-bold mb-12 text-center">Why Choose SoothSayer</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -205,7 +205,7 @@ export default function Home() {
         
         {/* Footer */}
         <footer className="text-center text-gray-400 text-sm">
-          <p>© 2025 ScalpGPT. All rights reserved.</p>
+          <p>© 2025 SoothSayer. All rights reserved.</p>
         </footer>
       </div>
       

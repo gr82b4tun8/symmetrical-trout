@@ -1,17 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, RefreshCw, Calendar, TrendingUp, Camera, BarChart2, Settings, DollarSign, Activity, Target, User, Upload } from 'lucide-react';
+import { Search, RefreshCw, Calendar, TrendingUp, Camera, Settings, DollarSign, Activity, Target, User } from 'lucide-react';
 import Head from 'next/head';
 import html2canvas from 'html2canvas';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
-import Layout from '../components/Layout';
+
+// Import Polygon.io helpers
+import { usePolygonWebsocket } from '../lib/polygonWebsocket';
+import { POLYGON_API_KEY, isMarketOpen } from '../lib/polygonConfig';
+import { 
+  processPolygonAggregateData, 
+  processPolygonTradeData, 
+  calculateStats
+} from '../lib/polygonDataHelpers';
 
 // Dynamically import Chart component
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-// Import our CSS gradient background (no webpack config needed)
+// Import our CSS gradient background
 import GradientBackground from '../components/GradientBackground';
+import Layout from '../components/Layout';
 
 export default function Home() {
   const [stockData, setStockData] = useState([]);
@@ -20,6 +29,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
+  const [realtimeMode, setRealtimeMode] = useState(isMarketOpen());
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
   
   // State variables for ChatGPT analysis
   const [analyzing, setAnalyzing] = useState(false);
@@ -35,8 +46,78 @@ export default function Home() {
   const [startingPortfolio, setStartingPortfolio] = useState(0);
   const [loadingUserData, setLoadingUserData] = useState(true);
   
+  // Reference for the latest stock data
+  const latestStockDataRef = useRef([]);
+  
   // Ref for the chart container to capture screenshot
   const chartRef = useRef(null);
+
+  // Process incoming websocket data
+  const handleWebsocketData = (data) => {
+    // Only process data in realtime mode
+    if (!realtimeMode) return;
+    
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Only update for the current day
+    if (selectedDate !== currentDate) return;
+    
+    // Process trades
+    const trades = data.filter(item => item.ev === 'T' && item.sym === symbol);
+    if (trades.length > 0) {
+      setLastUpdateTime(new Date().toLocaleTimeString());
+      
+      // Update the last candle with the latest trade
+      const updatedCandle = processPolygonTradeData(trades, latestStockDataRef.current[latestStockDataRef.current.length - 1]);
+      
+      if (updatedCandle) {
+        // Create a copy of the current stock data
+        const updatedData = [...latestStockDataRef.current];
+        // Replace the last candle with the updated one
+        updatedData[updatedData.length - 1] = updatedCandle;
+        
+        // Update state and ref
+        latestStockDataRef.current = updatedData;
+        setStockData(updatedData);
+        
+        // Update stats
+        const newStats = calculateStats(updatedData);
+        if (newStats) {
+          setStats(newStats);
+        }
+      }
+    }
+    
+    // Process minute aggregates
+    const aggregates = processPolygonAggregateData(data.filter(item => item.ev === 'AM' && item.sym === symbol));
+    if (aggregates.length > 0) {
+      // Check if we need to add a new candle
+      const latestData = latestStockDataRef.current;
+      const newCandle = aggregates[0];
+      
+      if (latestData.length === 0 || newCandle.x > latestData[latestData.length - 1].x) {
+        // Add the new candle to the data
+        const updatedData = [...latestData, newCandle];
+        latestStockDataRef.current = updatedData;
+        setStockData(updatedData);
+        
+        // Update stats
+        const newStats = calculateStats(updatedData);
+        if (newStats) {
+          setStats(newStats);
+        }
+        
+        setLastUpdateTime(new Date().toLocaleTimeString());
+      }
+    }
+  };
+
+  // Connect to Polygon.io websocket
+  const { isConnected, error: wsError } = usePolygonWebsocket(
+    POLYGON_API_KEY,
+    [symbol],
+    handleWebsocketData
+  );
 
   // Fetch user profile and trading goals data
   useEffect(() => {
@@ -76,73 +157,58 @@ export default function Home() {
     fetchUserData();
   }, []);
 
-  // Fetch stock data when date changes
+  // Fetch historical stock data when date or symbol changes
   useEffect(() => {
-    fetchStockData();
-  }, [selectedDate]);
+    // Check if we need to switch to historical mode
+    const today = new Date().toISOString().split('T')[0];
+    const isHistoricalData = selectedDate !== today;
+    
+    // Set realtime mode based on whether we're looking at today's data and market is open
+    setRealtimeMode(!isHistoricalData && isMarketOpen());
+    
+    // Fetch historical data
+    fetchHistoricalData();
+  }, [selectedDate, symbol]);
 
-  const isWithinTradingHours = (timestamp) => {
-    const date = new Date(timestamp);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const timeInMinutes = hours * 60 + minutes;
-    const marketOpen = 9 * 60 + 30;  // 9:30 AM
-    const marketClose = 16 * 60;     // 4:00 PM
-    return timeInMinutes >= marketOpen && timeInMinutes <= marketClose;
-  };
-
-  const fetchStockData = async () => {
+  // Fetch historical data from our API
+  const fetchHistoricalData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/stockData?symbol=${symbol}&date=${selectedDate}`);
+      
+      const response = await fetch(`/api/polygonHistoricalData?symbol=${symbol}&date=${selectedDate}`);
       const data = await response.json();
       
       if (data.error) {
         setError(data.error);
         return;
       }
-
-      if (data['Time Series (5min)']) {
-        const formattedData = Object.entries(data['Time Series (5min)'])
-          .filter(([timestamp]) => {
-            const date = new Date(timestamp);
-            const dateStr = date.toISOString().split('T')[0];
-            return dateStr === selectedDate && isWithinTradingHours(date);
-          })
-          .map(([timestamp, values]) => ({
-            x: new Date(timestamp).getTime(),
-            y: [
-              parseFloat(values['1. open']),
-              parseFloat(values['2. high']),
-              parseFloat(values['3. low']),
-              parseFloat(values['4. close'])
-            ]
-          }))
-          .reverse();
-
-        if (formattedData.length > 0) {
-          const latestData = formattedData[formattedData.length - 1];
-          const firstData = formattedData[0];
-          const changePct = ((latestData.y[3] - firstData.y[0]) / firstData.y[0] * 100).toFixed(2);
-          
-          setStats({
-            currentPrice: latestData.y[3].toFixed(2),
-            change: (latestData.y[3] - firstData.y[0]).toFixed(2),
-            changePct: changePct
-          });
-          
-          setStockData(formattedData);
-        } else {
-          setError(`No trading data available for ${selectedDate}`);
-        }
+      
+      if (data.data && data.data.length > 0) {
+        setStockData(data.data);
+        latestStockDataRef.current = data.data;
+        setStats(data.stats);
       } else {
-        setError('No data available for this symbol');
+        setError(`No trading data available for ${selectedDate}`);
       }
     } catch (err) {
-      setError('Failed to fetch stock data');
+      setError('Failed to fetch historical stock data');
+      console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to manually refresh data
+  const refreshData = () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (selectedDate === today && isMarketOpen()) {
+      // For realtime data, we don't need to do anything as the websocket will update
+      setLastUpdateTime(new Date().toLocaleTimeString());
+    } else {
+      // For historical data, refetch from the API
+      fetchHistoricalData();
     }
   };
 
@@ -252,7 +318,7 @@ export default function Home() {
       }
     },
     title: {
-      text: `${symbol} - ${new Date(selectedDate).toLocaleDateString()}`,
+      text: `${symbol} - ${new Date(selectedDate).toLocaleDateString()}${realtimeMode ? ' (Live)' : ''}`,
       align: 'left',
       style: {
         fontSize: '16px',
@@ -365,6 +431,19 @@ export default function Home() {
         </div>
       </div>
       
+      {/* Websocket Status */}
+      {realtimeMode && (
+        <div className="mb-4 flex items-center">
+          <div className={`w-3 h-3 rounded-full mr-2 ${isConnected ? 'bg-[#00C853]' : 'bg-[#FF3D71]'}`}></div>
+          <p className="text-sm text-gray-300">
+            {isConnected ? 'Live Data Connected' : 'Connecting to live data...'}
+            {lastUpdateTime && isConnected && (
+              <span className="ml-2 text-gray-400">Last update: {lastUpdateTime}</span>
+            )}
+          </p>
+        </div>
+      )}
+      
       {/* Portfolio Stats in Bubbles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="portfolio-bubble p-6 flex items-center">
@@ -392,7 +471,7 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Portfolio Goal Card - Progress Bar Removed */}
+        {/* Portfolio Goal Card */}
         <div className="portfolio-bubble p-6 flex items-center">
           <div className="rounded-full p-3 bg-[rgba(0,200,83,0.15)] mr-4">
             <Target className="h-6 w-6 text-[#00C853]" />
@@ -461,10 +540,10 @@ export default function Home() {
               <TrendingUp className="h-4 w-4 text-[#FF3D71]" />
             </div>
             <p className="text-xs text-gray-400 ml-2">
-              Last updated just now
+              {realtimeMode ? 'Live updates' : 'Last updated just now'}
             </p>
             <button 
-              onClick={fetchStockData}
+              onClick={refreshData}
               disabled={loading}
               className="ml-auto text-sm bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] px-3 py-1.5 rounded-md transition-colors"
             >
@@ -549,7 +628,12 @@ export default function Home() {
       <div className="card overflow-hidden mb-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-white">Market Activity</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Market Activity
+              {realtimeMode && (
+                <span className="ml-2 text-sm text-[#00C853] font-normal">Live</span>
+              )}
+            </h2>
             <div className="flex space-x-2 bg-[rgba(255,255,255,0.05)] rounded-md p-1">
               <button 
                 className={`text-xs px-3 py-1.5 rounded-md ${timeFilter === 'day' ? 'tab-active' : 'tab text-gray-400'}`}
@@ -584,6 +668,12 @@ export default function Home() {
             </div>
           )}
           
+          {wsError && (
+            <div className="bg-[rgba(255,61,113,0.1)] border-l-2 border-[#FF3D71] p-3 mb-4 rounded-md">
+              <p className="text-[#FF3D71] text-sm">{wsError}</p>
+            </div>
+          )}
+          
           {stockData.length > 0 ? (
             <div ref={chartRef}>
               <Chart
@@ -598,7 +688,7 @@ export default function Home() {
               <div className="text-center">
                 <p className="text-gray-400 mb-4">No data available</p>
                 <button 
-                  onClick={fetchStockData}
+                  onClick={refreshData}
                   className="px-4 py-2 bg-[#3366FF] text-white rounded-md text-sm"
                 >
                   Load Data
@@ -673,39 +763,7 @@ export default function Home() {
   );
 }
 
-// Custom style for the gradient background
-const CustomGradientStyles = () => {
-  return (
-    <style jsx global>{`
-      .gradient-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: 
-          radial-gradient(circle at 80% 30%, rgb(104, 142, 82) 0%, transparent 40%),
-          radial-gradient(circle at 20% 70%, rgb(167, 37, 37) 0%, transparent 40%);
-        animation: gradientAnimation 5s ease infinite;
-        z-index: 0;
-      }
-      
-      @keyframes gradientAnimation {
-        0% {
-          background-position: 0% 50%;
-        }
-        50% {
-          background-position: 100% 50%;
-        }
-        100% {
-          background-position: 0% 50%;
-        }
-      }
-    `}</style>
-  );
-};
-
-// Extracted all styles to a separate component to avoid any issues
+// The following components (GlobalStyles and CustomGradientStyles) remain unchanged from your original code
 function GlobalStyles() {
   return (
     <style jsx global>{`

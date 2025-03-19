@@ -43,7 +43,14 @@ export default async function handler(req, res) {
     }
 
     // Convert base64 data URL to binary for the OpenAI API
-    const base64Data = image.split(',')[1];
+    const base64Data = image.includes(',') ? image.split(',')[1] : image;
+    
+    // Add debug logging for image data
+    console.log('Image data format check:', {
+      startsWithData: image.startsWith('data:'),
+      length: image.length,
+      sampleStart: image.substring(0, 30) + '...'
+    });
 
     // Initialize the OpenAI API client with explicit API key
     console.log('Initializing OpenAI client...');
@@ -53,29 +60,56 @@ export default async function handler(req, res) {
 
     console.log('Sending request to OpenAI...');
     
-    // Send to ChatGPT with vision capabilities using the current model
-    // Using gpt-4o which supports vision capabilities
+    // Updated prompt with structured sections for options analysis
+    const structuredPrompt = `Based on this chart image of ${symbol} for ${date}, please analyze and provide:
+
+1. OPTION TYPE: Recommend whether this setup indicates a call or put position.
+
+2. STRIKE PRICE: Suggest the optimal strike price based on the technical setup.
+
+3. ENTRY PRICE: Specify the ideal entry price or range for this options contract.
+
+4. EXIT STRATEGY: Define both a profit target price and stop-loss level.
+
+5. RATIONALE: Explain the technical setup or pattern visible in the chart that justifies this trade.
+
+Please organize your response in these five clearly labeled sections.`;
+
+    // Determine the correct image type (JPEG or PNG)
+    const imageType = image.includes('data:image/png') ? 'png' : 'jpeg';
+    const imageUrl = base64Data.startsWith('data:') 
+      ? base64Data 
+      : `data:image/${imageType};base64,${base64Data}`;
+    
+    console.log(`Using image type: ${imageType}`);
+    console.log(`Image URL starts with: ${imageUrl.substring(0, 30)}...`);
+
+    // Send to ChatGPT with vision capabilities
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Updated to use the current vision-capable model
+      model: "gpt-4o", // Current vision-capable model
       messages: [
+        {
+          role: "system",
+          content: "You are a specialized options trading analyst. You can see and analyze stock charts to provide specific options trading recommendations."
+        },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Based on this image of a ${symbol} stock chart for ${date}, give a concise suggestion on the options scalping play. Focus on strike prices, expiration, entry/exit conditions, and risk management.`
+              text: structuredPrompt
             },
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64Data}`,
+                url: imageUrl,
                 detail: "high" // Request high detail analysis
               }
             }
           ]
         }
       ],
-      max_tokens: 500,
+      max_tokens: 600,
     });
 
     console.log('Response received from OpenAI');
