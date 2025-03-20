@@ -27,7 +27,7 @@ const AppSidebar = ({ isOpen, onClose, isCollapsed }) => {
       disabled: true,
       comingSoon: true
     },
-    { icon: DollarSign, label: 'Upload Chart', path: '/external-chart' },
+    { icon: DollarSign, label: 'Market Insights', path: '/external-chart' },
     { icon: Users, label: 'Planning', path: '/planning' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];

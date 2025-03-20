@@ -524,7 +524,7 @@ export default function ExternalChartAnalysis() {
                       )}
                     </div>
                     <div>
-                      <div className="section-title mb-1">Option Type</div>
+                      <div className="section-title mb-1">Potential Option Class</div>
                       <div className="text-white">{parsedSections.optionType}</div>
                     </div>
                   </div>
@@ -569,7 +569,7 @@ export default function ExternalChartAnalysis() {
                       <LogOut className="h-5 w-5 text-[#3366FF]" />
                     </div>
                     <div>
-                      <div className="section-title mb-1">Exit Strategy</div>
+                      <div className="section-title mb-1">PossibleExit Strategy</div>
                       <div className="text-white">{parsedSections.exitStrategy}</div>
                     </div>
                   </div>

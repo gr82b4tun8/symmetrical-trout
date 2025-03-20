@@ -45,6 +45,10 @@ export default function LogCalendar() {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [portfolioValue, setPortfolioValue] = useState(0);
+  
+  // New states for viewing trades
+  const [dayTrades, setDayTrades] = useState([]);
+  const [viewingTrades, setViewingTrades] = useState(false);
 
   // Trade form state
   const [tradeForm, setTradeForm] = useState({
@@ -155,10 +159,8 @@ export default function LogCalendar() {
     setMonthStats(stats);
   }, [currentDate, tradeData]);
 
-  // Handle date selection in calendar
-  const handleDateSelect = (date) => {
-    setSelectedDate(date);
-    setIsModalOpen(true);
+  // Reset trade form to defaults
+  const resetTradeForm = () => {
     setTradeForm({
       symbol: '',
       time: '',
@@ -168,6 +170,44 @@ export default function LogCalendar() {
       fees: '',
       notes: ''
     });
+  };
+
+  // Handle date selection in calendar - modified to fetch trades for the selected date
+  const handleDateSelect = async (date) => {
+    setSelectedDate(date);
+    
+    try {
+      const dateString = format(date, 'yyyy-MM-dd');
+      
+      // Fetch trades for this specific date
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', dateString)
+        .order('time', { ascending: true });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // If there are trades for this day, show them
+        setDayTrades(data);
+        setViewingTrades(true);
+      } else {
+        // If no trades, open the add trade modal
+        resetTradeForm();
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Error fetching day trades:', error);
+    }
+  };
+
+  // Function to handle opening the add trade form from the trades list view
+  const handleAddTrade = () => {
+    resetTradeForm();
+    setViewingTrades(false);
+    setIsModalOpen(true);
   };
 
   // Handle trade form input changes
@@ -422,7 +462,7 @@ export default function LogCalendar() {
             display: block;
           }
         `}</style>
-        <title>Trading Log | ScalpGPT</title>
+        <title>Trading Log | SoothSayer</title>
       </Head>
       
       <div className="max-w-5xl mx-auto">
@@ -580,6 +620,7 @@ export default function LogCalendar() {
                 <button 
                   onClick={() => {
                     setSelectedDate(new Date());
+                    resetTradeForm();
                     setIsModalOpen(true);
                   }}
                   className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs"
@@ -811,6 +852,89 @@ export default function LogCalendar() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* View Trades Modal - New */}
+      {viewingTrades && (
+        <div className="modal-backdrop" onClick={() => setViewingTrades(false)}>
+          <div 
+            className="card p-6 w-full max-w-xl mx-4 modal-enter"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-white">
+                {selectedDate ? `Trades - ${format(selectedDate, 'MMMM d, yyyy')}` : 'Trades'}
+              </h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleAddTrade}
+                  className="flex items-center bg-[#3366FF] px-3 py-1.5 rounded-md text-white text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Trade
+                </button>
+                <button
+                  onClick={() => setViewingTrades(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(255,255,255,0.05)]"
+                >
+                  <X size={18} className="text-gray-400" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="max-h-[60vh] overflow-y-auto">
+              {dayTrades.map((trade, index) => (
+                <div 
+                  key={trade.id} 
+                  className={`p-4 rounded-md bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] ${
+                    index !== dayTrades.length - 1 ? 'mb-4' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="text-lg font-semibold text-white">{trade.symbol}</h4>
+                      <div className="text-sm text-gray-400">{trade.time}</div>
+                    </div>
+                    <div className={`text-lg font-bold ${trade.profit >= 0 ? 'text-[#00C853]' : 'text-[#FF3D71]'}`}>
+                      {trade.profit >= 0 ? '+' : ''}${trade.profit.toFixed(2)}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Entry Price</div>
+                      <div className="text-sm text-white">${trade.entry_price.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Exit Price</div>
+                      <div className="text-sm text-white">${trade.exit_price.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Contracts</div>
+                      <div className="text-sm text-white">{trade.contracts}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Fees</div>
+                      <div className="text-sm text-white">${trade.fees.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  
+                  {trade.notes && (
+                    <div className="mt-3">
+                      <div className="text-xs text-gray-400 mb-1">Notes</div>
+                      <div className="text-sm text-white p-2 rounded-md bg-[rgba(255,255,255,0.05)]">
+                        {trade.notes}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
