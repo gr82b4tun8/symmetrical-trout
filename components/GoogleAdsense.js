@@ -16,15 +16,3 @@ export default function GoogleAdSense() {
   
   return null;
 }
-
-// Then in _app.js
-import GoogleAdSense from '../components/GoogleAdSense';
-
-export default function App({ Component, pageProps }) {
-  return (
-    <>
-      <GoogleAdSense />
-      <Component {...pageProps} />
-    </>
-  );
-}
