@@ -101,12 +101,26 @@ export default function ExternalChartAnalysis() {
         }),
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to analyze chart');
+      // Get response text first to handle parsing safely
+      const responseText = await response.text();
+      
+      // Try to parse as JSON
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        throw new Error('Invalid response format from server');
       }
       
-      const data = await response.json();
+      if (!response.ok) {
+        const errorMessage = data?.error || 'Failed to analyze chart';
+        throw new Error(errorMessage);
+      }
+      
+      if (!data) {
+        throw new Error('Empty response received from server');
+      }
       
       // Simply use the analysis text
       setAnalysisResult(data.analysis);
@@ -221,7 +235,7 @@ export default function ExternalChartAnalysis() {
       <GradientBackground />
       
       <Head>
-        <title>External Chart Analysis - ScalpGPT</title>
+        <title>External Chart Analysis - SoothSayer</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -524,7 +538,7 @@ export default function ExternalChartAnalysis() {
                       )}
                     </div>
                     <div>
-                      <div className="section-title mb-1">Potential Option Class</div>
+                      <div className="section-title mb-1">Option Type</div>
                       <div className="text-white">{parsedSections.optionType}</div>
                     </div>
                   </div>
@@ -569,7 +583,7 @@ export default function ExternalChartAnalysis() {
                       <LogOut className="h-5 w-5 text-[#3366FF]" />
                     </div>
                     <div>
-                      <div className="section-title mb-1">PossibleExit Strategy</div>
+                      <div className="section-title mb-1">Exit Strategy</div>
                       <div className="text-white">{parsedSections.exitStrategy}</div>
                     </div>
                   </div>
