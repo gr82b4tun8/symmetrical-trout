@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { ArrowLeft, User, DollarSign, PieChart, Briefcase, Calendar, Edit, LogOut, AlertCircle, Target } from 'lucide-react';
+import { ArrowLeft, User, DollarSign, LogOut, AlertCircle, Target } from 'lucide-react';
 import GradientBackground from '../components/GradientBackground';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { supabase } from '../lib/supabaseClient';
@@ -163,20 +163,6 @@ function MyProfile() {
     }
   };
 
-  // Calculate user stats based on profile data
-  const userStats = [
-    {
-      label: 'Experience',
-      value: profile?.trading_experience ? experienceLabels[profile.trading_experience] : 'Not specified',
-      icon: <Calendar className="h-5 w-5 text-[#3366FF]" />
-    },
-    {
-      label: 'Portfolio Size',
-      value: profile?.portfolio_size ? portfolioLabels[profile.portfolio_size] : 'Not specified',
-      icon: <Briefcase className="h-5 w-5 text-[#00C853]" />
-    }
-  ];
-
   // Format currency
   const formatCurrency = (value) => {
     if (!value && value !== 0) return 'Not set';
@@ -291,7 +277,7 @@ function MyProfile() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
-          <Link href="/trading" className="flex items-center">
+          <Link href="/external-chart" className="flex items-center">
             <ArrowLeft className="h-5 w-5 mr-2" />
             <span>Back to Trading</span>
           </Link>
@@ -444,11 +430,7 @@ function MyProfile() {
                     <h1 className="text-2xl font-bold mb-1">{profile?.full_name || 'Trader'}</h1>
                     <p className="text-gray-400 mb-4">{user?.email}</p>
                     
-                    <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                      <button className="btn-primary rounded-md py-2 px-4 text-sm flex items-center">
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Profile
-                      </button>
+                    <div className="flex flex-wrap justify-center md:justify-start">
                       <button 
                         onClick={handleSignOut}
                         className="btn-danger rounded-md py-2 px-4 text-sm flex items-center"
@@ -458,25 +440,6 @@ function MyProfile() {
                       </button>
                     </div>
                   </div>
-                </div>
-                
-                <div className="h-px w-full bg-[rgba(255,255,255,0.1)] my-6"></div>
-                
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {userStats.map((stat, index) => (
-                    <div key={index} className="stat-card p-4">
-                      <div className="flex items-start">
-                        <div className="rounded-lg p-2 bg-[rgba(255,255,255,0.05)] mr-3">
-                          {stat.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-sm text-gray-400 mb-1">{stat.label}</h3>
-                          <p className="text-lg font-medium">{stat.value}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
                 
                 <div className="h-px w-full bg-[rgba(255,255,255,0.1)] my-6"></div>
@@ -509,33 +472,6 @@ function MyProfile() {
                         : 'Not available'}
                       </p>
                     </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Recommended Actions */}
-              <div className="card p-6">
-                <h2 className="text-lg font-medium mb-4">Recommended Next Steps</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-[rgba(51,102,255,0.05)] border border-[rgba(51,102,255,0.2)] rounded-md p-4">
-                    <h3 className="font-medium mb-2 flex items-center">
-                      <PieChart className="h-4 w-4 text-[#3366FF] mr-2" />
-                      Set Trading Goals
-                    </h3>
-                    <p className="text-sm text-gray-300 mb-3">Define your trading objectives and risk tolerance to get personalized recommendations.</p>
-                    <Link href="/trading-goals" className="text-sm text-[#3366FF] font-medium">
-                      Get Started &rarr;
-                    </Link>
-                  </div>
-                  <div className="bg-[rgba(0,200,83,0.05)] border border-[rgba(0,200,83,0.2)] rounded-md p-4">
-                    <h3 className="font-medium mb-2 flex items-center">
-                      <DollarSign className="h-4 w-4 text-[#00C853] mr-2" />
-                      Connect Trading Account
-                    </h3>
-                    <p className="text-sm text-gray-300 mb-3">Link your brokerage account to enable real-time analytics and insights.</p>
-                    <Link href="/connect-account" className="text-sm text-[#00C853] font-medium">
-                      Connect Now &rarr;
-                    </Link>
                   </div>
                 </div>
               </div>

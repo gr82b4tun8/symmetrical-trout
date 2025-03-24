@@ -1,6 +1,7 @@
 // pages/index.js
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Script from 'next/script'; // Added Script import
 import Link from 'next/link';
 import { BarChart2, TrendingUp, User, ChevronRight, LogIn } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -21,15 +22,7 @@ export default function Home() {
       
       <Head>
         <title>SoothSayer - AI-Powered Trading Analysis</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-        {/* Google AdSense Script */}
-        <script 
-          async 
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1549212779236114"
-          crossOrigin="anonymous"
-        />
+        {/* Font links moved to _document.js */}
         <style>{`
           :root {
             --font-primary: 'Inter', sans-serif;
@@ -98,6 +91,13 @@ export default function Home() {
           }
         `}</style>
       </Head>
+      
+      {/* Google AdSense Script properly implemented with next/script */}
+      <Script
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1549212779236114"
+        strategy="afterInteractive"
+        crossOrigin="anonymous"
+      />
       
       {/* Content with higher z-index to appear above gradient */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-20">

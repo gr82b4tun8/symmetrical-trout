@@ -18,7 +18,7 @@ const AppSidebar = ({ isOpen, onClose, isCollapsed }) => {
   const router = useRouter();
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Home, label: 'Dashboard', path: '/trading' },
     { icon: TrendingUp, label: 'Log', path: '/log' },
     { 
       icon: PieChart, 
@@ -29,7 +29,7 @@ const AppSidebar = ({ isOpen, onClose, isCollapsed }) => {
     },
     { icon: DollarSign, label: 'Market Insights', path: '/external-chart' },
     { icon: Users, label: 'Planning', path: '/planning' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: Settings, label: 'Settings', path: '/my-profile' }, // Changed path to /my-profile
   ];
 
   const isActive = (path) => {
