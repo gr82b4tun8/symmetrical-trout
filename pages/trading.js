@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, Camera, Settings, DollarSign, Target, User } from 'lucide-react';
 import Head from 'next/head';
+import Script from 'next/script';  // Added script import for consistency
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 
@@ -236,11 +237,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="mt-6 text-center">
-            <Link href="/activity" className="text-sm text-[#3366FF] hover:text-[#4d7aff] transition-colors">
-              View All Activity
-            </Link>
-          </div>
+          {/* View All Activity button removed as requested */}
         </div>
       </div>
       
@@ -282,10 +279,15 @@ export default function Home() {
   return (
     <>
       <Head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+        {/* Font links moved to _document.js */}
       </Head>
+      
+      {/* AdSense Script if needed */}
+      <Script
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1549212779236114"
+        strategy="afterInteractive"
+        crossOrigin="anonymous"
+      />
       
       {/* Use the Layout component */}
       <Layout>
