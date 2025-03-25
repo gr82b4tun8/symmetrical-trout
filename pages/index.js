@@ -91,14 +91,6 @@ export default function Home() {
           }
         `}</style>
       </Head>
-      
-      {/* Google AdSense Script properly implemented with next/script */}
-      <Script
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1549212779236114"
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
-      
       {/* Content with higher z-index to appear above gradient */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-20">
         {/* Header/Nav */}

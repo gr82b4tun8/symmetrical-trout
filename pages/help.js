@@ -94,15 +94,7 @@ export default function HelpCenter() {
             background-color: rgba(255, 255, 255, 0.02);
           }
         `}</style>
-      </Head>
-      
-      {/* Google AdSense Script properly implemented with next/script */}
-      <Script
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1549212779236114"
-        strategy="afterInteractive"
-        crossOrigin="anonymous"
-      />
-      
+      </Head>     
       {/* Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
